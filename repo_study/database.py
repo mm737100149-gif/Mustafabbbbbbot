@@ -236,8 +236,10 @@ def migrate_from_json(conn: sqlite3.Connection):
         "processed_count": "18",
         "forwarded_count": "15",
         "ad_replaced_count": "3",
+
         "ad_replacement_enabled": "0"
     }
+
 
     for k, v in defaults.items():
         cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))

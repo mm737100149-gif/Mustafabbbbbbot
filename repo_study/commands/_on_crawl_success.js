@@ -98,19 +98,17 @@ function deepCleanWebGarbage(html) {
 var extracted_text = deepCleanWebGarbage(raw_html_text);
 
 // استخراج الصورة الحقيقية
+// 101: استخراج الصورة الحقيقية
 function extractValidPhoto(chunk) {
   if (!chunk) return null;
-  // تحديث Regex لاستيعاب التغييرات في كود تيليجرام ويب واستخراج الصور بدقة
-  var photoWrapMatch = chunk.match(/class="[^"]*tgme_widget_message_photo_wrap[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i) ||
-                   chunk.match(/class="[^"]*tgme_widget_message_photo[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i);
-  
-  if (photoWrapMatch) {
-    var u = (photoWrapMatch[1]).trim();
+  var photoWrapMatch = chunk.match(/class="[^"]*tgme_widget_message_photo_wrap[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i);
+  if (photoWrapMatch && photoWrapMatch[1]) {
+    var u = photoWrapMatch[1].trim();
     if (u.indexOf("emoji") === -1 && u.indexOf("telegram.org/img") === -1) {
       return u.indexOf("//") === 0 ? ("https:" + u) : u;
     }
   }
-  var cdnMatch = chunk.match(/background-image:\s*url\('(https?:\/\/[^']*(?:telesco\.pe|cdn|telegram|fbcdn)[^']*)'\)/i);
+  var cdnMatch = chunk.match(/background-image:\s*url\('(https?:\/\/[^']*(?:telesco\.pe|cdn|telegram)[^']*)'\)/i);
   if (cdnMatch && cdnMatch[1] && cdnMatch[1].indexOf("emoji") === -1) {
     return cdnMatch[1].trim();
   }
@@ -120,60 +118,45 @@ function extractValidPhoto(chunk) {
 
 var image_url = extractValidPhoto(post_chunk);
 
-// 🛡️ منع التكرار عبر البصمة الرقمية (Hash) بسيطة لتلائم Bot Business
+// 🛡️ منع التكرار (نظام البصمة الرقمية)
 var post_hash = "h_" + (extracted_text.substring(0, 50) + (image_url || "")).length; 
 if (Bot.getProperty("seen_" + post_hash)) return;
 Bot.setProperty("seen_" + post_hash, true, "boolean");
 
-// حفظ معرف المنشور لمنع التكرار (الطريقة القديمة للمصادر)
 Bot.setProperty("last_crawl_id_" + channel_name, max_id, "integer");
 
-// إذا كان النص بعد التنظيف فارغاً أو تافهاً، نتجاهله فوراً
-if (!extracted_text || extracted_text.length < 20) {
+if (!extracted_text || extracted_text.length < 15) {
   return;
 }
 
-// 4. مطابقة الجامعة المستهدفة وقناة النشر المخصصة لها حصراً
 var univ_projects = Bot.getProperty("university_projects", []);
 var target_univ = null;
 
-// أولاً: البحث بالمعرف المربوط بالطلب
 if (bound_univ_id) {
   for (var u1 = 0; u1 < univ_projects.length; u1++) {
-    if (univ_projects[u1].id === bound_univ_id) {
-      target_univ = univ_projects[u1];
-      break;
-    }
+    if (univ_projects[u1].id === bound_univ_id) { target_univ = univ_projects[u1]; break; }
   }
 }
 
-// ثانياً: البحث بقناة المصدر
 if (!target_univ) {
-  var clean_at_ch = "@" + channel_name;
   for (var u2 = 0; u2 < univ_projects.length; u2++) {
     var tg_list = univ_projects[u2].telegram_sources || [];
     var tw_list = univ_projects[u2].twitter_sources || [];
     var combined_list = tg_list.concat(tw_list);
     for (var s = 0; s < combined_list.length; s++) {
-      var s_cl = combined_list[s].replace(/^@/, "").toLowerCase();
-      if (s_cl === channel_name) {
-        target_univ = univ_projects[u2];
-        break;
+      if (combined_list[s].replace(/^@/, "").toLowerCase() === channel_name) {
+        target_univ = univ_projects[u2]; break;
       }
     }
     if (target_univ) break;
   }
 }
 
-// إذا لم نجد جامعة، نأخذ الجامعة الأولى الافتراضية
-if (!target_univ && univ_projects.length > 0) {
-  target_univ = univ_projects[0];
-}
+if (!target_univ && univ_projects.length > 0) target_univ = univ_projects[0];
 if (!target_univ) return;
 
 var dest_target = target_univ.target_channel || "@jhdhhdcj";
 
-// 7. إرسال إلى الذكاء الاصطناعي مع تعليمات صارمة مخصصة للجامعة
 Bot.setProperty("pending_media_type", image_url ? "photo" : "text", "string");
 Bot.setProperty("pending_media_id", image_url || "", "string");
 Bot.setProperty("pending_raw_text", extracted_text, "string");
@@ -184,32 +167,33 @@ var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
 var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 
-var system_prompt = "# الهوية: محرر أكاديمي وجامعي رسمي لطلاب: (" + target_univ.name + ").\n" +
-  "أنت لست بوت؛ أنت المشرف الرسمي الذي يكتب الأخبار للطلاب بأسلوبك الخاص.\n\n" +
-  "## القواعد الذهبية:\n" +
-  "1. ممنوع منعاً باتاً ذكر المصادر (مثل: وفقاً لـ، نقلاً عن، حساب تويتر، قناة تليجرام).\n" +
-  "2. التنسيق: ابدأ دائماً بـ 📌 مع عنوان قوي، ثم نقاط واضحة للمحتوى [•]، ثم روابط التقديم الرسمية 🔗، ثم هاشتاجات الجامعة.\n" +
-  "3. لا تغير المواعيد، التواريخ، أو الروابط الرسمية (روابط PowerApps، نماذج جوجل، بوابات الجامعات).\n" +
-  "4. إذا كان الخبر إعلاناً تجارياً لخدمات أخرى، استبعده فوراً بكلمة: [IGNORED].\n" +
-  "5. اللغة: عربية فصحى راقية ومباشرة.\n";
+
+
+var system_prompt = "# الدور: المشرف الأكاديمي والناشر الرسمي للقناة (Ultra-Professional).\n" +
+  "أنت المسؤول الأول عن إيصال المعلومة لآلاف الطلاب؛ كن دقيقاً، لبقاً، وسريعاً.\n\n" +
+  "## قواعد النشر الذكي:\n" +
+  "1. **المحتوى الشامل**: انشر كل ما يهم الطالب (جداول، تواريخ، أخبار، تنبيهات) من المصدر فوراً.\n" +
+  "2. **التنسيق الأكاديمي**: \n" +
+  "   - ابدأ بـ 📌 للأخبار العادية، أو ⚠️ للأخبار الهامة والمواعيد النهائية.\n" +
+  "   - استخدم النقاط [•] لتنظيم المتطلبات أو الخطوات.\n" +
+  "   - ضع روابط التقديم الرسمية 🔗 في سطر مستقل وبنصها الكامل.\n" +
+  "3. **هوية القناة**: لا تذكر أي مصادر خارجية. أنت من يكتب الخبر.\n" +
+  "4. **الفلترة الذكية**: استبعد فقط الإعلانات التجارية (حل الواجبات، البيع) بكلمة [IGNORED].\n" +
+  "5. **اللغة**: عربية فصحى راقية جداً وبأسلوب بشري لا يثير الشك.\n";
+
 
 HTTP.post({
   url: base_url.replace(/\/+$/, "") + "/chat/completions",
-  headers: {
-    "Authorization": "Bearer " + api_key,
-    "Content-Type": "application/json"
-  },
+  headers: { "Authorization": "Bearer " + api_key, "Content-Type": "application/json" },
   body: {
     model: current_model,
-    messages: [
-      { role: "system", content: system_prompt },
-      { role: "user", content: extracted_text }
-    ],
-    temperature: 0.3,
-    max_tokens: 600
+    messages: [ { role: "system", content: system_prompt }, { role: "user", content: extracted_text } ],
+    temperature: 0.35,
+    max_tokens: 650
   },
   success: "/on_ai_post_success",
   error: "/on_ai_post_error",
   background: true
 });
+
 
