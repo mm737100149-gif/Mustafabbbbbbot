@@ -88,23 +88,29 @@ for (var idx = 1; idx < item_chunks.length && idx <= 4; idx++) {
 
   if (!is_relevant) continue;
 
-// 91: 
-  var seen_key = "seen_gnews_" + (raw_title.substring(0, 30)).length + "_" + raw_title.length;
-  if (Bot.getProperty(seen_key)) continue;
-
-  Bot.setProperty(seen_key, true, "boolean");
-  found_article = {
-    title: raw_title,
-    desc: raw_desc,
-    link: raw_link
-  };
-  break;
+function getSimpleHash(str) {
+  var hash = 0;
+  if (!str) return "0";
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h_" + Math.abs(hash);
 }
 
-if (!found_article) {
-  Bot.sendMessage("ℹ️ **أخبار جوجل لـ " + target_univ.name + "**: لا توجد أخبار جديدة حالياً.");
-  return;
+var seen_key = "seen_gnews_" + getSimpleHash(raw_title);
+if (Bot.getProperty(seen_key)) continue;
+
+Bot.setProperty(seen_key, true, "boolean");
+found_article = {
+  title: raw_title,
+  desc: raw_desc,
+  link: raw_link
+};
+break;
 }
+
+if (!found_article) return;
 
 var article_text = "عنوان الخبر: " + found_article.title + "\n\n" +
   "التفاصيل: " + found_article.desc;
@@ -124,13 +130,15 @@ var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
 var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 
-var system_prompt = "# الهوية: محرر أخبار جوجل الأكاديمية لطلاب: (" + target_univ.name + ").\n" +
-  "مهمتك تحويل هذا الخبر الصحفي إلى منشور رسمي لقناتك.\n\n" +
+var system_prompt = "# الهوية: المحرر الأكاديمي الرسمي (Google News Edition).\n" +
+  "أنت محرر خبير في الشؤون الجامعية لطلاب: (" + target_univ.name + ").\n\n" +
+  "## المهمة:\n" +
+  "حوّل الخبر الصحفي المرفق إلى منشور رسمي رصين.\n\n" +
   "## القواعد:\n" +
-  "1. ممنوع ذكر اسم الجريدة أو الموقع الإخباري (مثل: جريدة سبق، صحيفة عكاظ، إلخ).\n" +
-  "2. ابدأ بـ 📌 مع عنوان أكاديمي يذكر اسم الجامعة.\n" +
-  "3. نظم المحتوى في نقاط واضحة.\n" +
-  "4. إذا لم يكن الخبر يخص الجامعة بشكل مباشر، رد بـ [IGNORED].\n";
+  "1. ممنوع نهائياً ذكر اسم الصحيفة أو الموقع الإخباري أو \"نشرت جريدة كذا\". ابدأ بالخبر مباشرة.\n" +
+  "2. التنسيق: استخدم 📌 للعنوان، ونظم المحتوى في نقاط واضحة.\n" +
+  "3. لا تضع أي مقدمات مثل \"إليك ما تم نشره\".\n" +
+  "4. إذا كان الخبر غير مرتبط بالجامعة أو طلابها، رد بـ [IGNORED].\n";
 
 HTTP.post({
   url: base_url.replace(/\/+$/, "") + "/chat/completions",

@@ -59,6 +59,9 @@ var twitter_instances = [
   "nitter.poast.org",
   "nitter.net",
   "nitter.privacyredirect.com",
+  "nitter.moomoo.me",
+  "nitter.it",
+  "nitter.esmailelbob.xyz",
   "xcancel.com"
 ];
 var current_instance_idx = Bot.getProperty("nitter_idx", 0);
