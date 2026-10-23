@@ -88,31 +88,38 @@ for (var idx = 1; idx < item_chunks.length && idx <= 4; idx++) {
 
   if (!is_relevant) continue;
 
-  var seen_key = "seen_gnews_" + encodeURIComponent(raw_title.slice(0, 25));
-  if (Bot.getProperty(seen_key)) continue;
-
-  Bot.setProperty(seen_key, true, "boolean");
-  found_article = {
-    title: raw_title,
-    desc: raw_desc,
-    link: raw_link
-  };
-  break;
+function getSimpleHash(str) {
+  var hash = 0;
+  if (!str) return "0";
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h_" + Math.abs(hash);
 }
 
-if (!found_article) {
-  Bot.sendMessage("ℹ️ **أخبار جوجل لـ " + target_univ.name + "**: لا توجد أخبار جديدة حالياً.");
-  return;
+var seen_key = "seen_gnews_" + getSimpleHash(raw_title);
+if (Bot.getProperty(seen_key)) continue;
+
+Bot.setProperty(seen_key, true, "boolean");
+found_article = {
+  title: raw_title,
+  desc: raw_desc,
+  link: raw_link
+};
+break;
 }
+
+if (!found_article) return;
 
 var article_text = "عنوان الخبر: " + found_article.title + "\n\n" +
-  "تفاصيل الخبر من المصادر الرسمية: " + found_article.desc;
+  "التفاصيل: " + found_article.desc;
 
 if (found_article.link) {
-  article_text += "\n\nرابط المصدر الإخباري: " + found_article.link;
+  article_text += "\n\nرابط المصدر: " + found_article.link;
 }
 
-// حفظ بيانات الإرسال والتوجيه لقناة هذه الجامعة حصراً
+// 7. إرسال للذكاء بنظام العزل الأكاديمي
 Bot.setProperty("pending_media_type", "text", "string");
 Bot.setProperty("pending_media_id", "", "string");
 Bot.setProperty("pending_raw_text", article_text, "string");
@@ -123,13 +130,15 @@ var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
 var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 
-var system_prompt = "أنت محرر محتوى أكاديمي رسمي مخصص حصراً لطلاب: (" + target_univ.name + ").\n" +
-  "مهمتك صياغة الخبر التالي بأسلوب إخباري راقٍ ومباشر:\n" +
-  "1. عنوان بارز يذكر اسم الجامعة أو كليتها بوضوح (📌)\n" +
-  "2. تفاصيل منظمة في نقاط محددة\n" +
-  "3. دعوة تفاعلية قصيرة للطلاب (💬)\n" +
-  "4. هاشتاجات الجامعة الرسمية (مثال: #" + target_univ.name.replace(/\s+/g, "_") + " #أخبار_التعليم)\n" +
-  "قاعدة صارمة: لا تذكر مصادر خارجية، واكتب بأسلوبك الأصيل.";
+var system_prompt = "# الهوية: المحرر الأكاديمي الرسمي (Google News Edition).\n" +
+  "أنت محرر خبير في الشؤون الجامعية لطلاب: (" + target_univ.name + ").\n\n" +
+  "## المهمة:\n" +
+  "حوّل الخبر الصحفي المرفق إلى منشور رسمي رصين.\n\n" +
+  "## القواعد:\n" +
+  "1. ممنوع نهائياً ذكر اسم الصحيفة أو الموقع الإخباري أو \"نشرت جريدة كذا\". ابدأ بالخبر مباشرة.\n" +
+  "2. التنسيق: استخدم 📌 للعنوان، ونظم المحتوى في نقاط واضحة.\n" +
+  "3. لا تضع أي مقدمات مثل \"إليك ما تم نشره\".\n" +
+  "4. إذا كان الخبر غير مرتبط بالجامعة أو طلابها، رد بـ [IGNORED].\n";
 
 HTTP.post({
   url: base_url.replace(/\/+$/, "") + "/chat/completions",
@@ -144,9 +153,10 @@ HTTP.post({
       { role: "user", content: article_text }
     ],
     temperature: 0.3,
-    max_tokens: 450
+    max_tokens: 500
   },
   success: "/on_ai_post_success",
   error: "/on_ai_post_error",
   background: true
 });
+

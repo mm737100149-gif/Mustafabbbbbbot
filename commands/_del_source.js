@@ -1,21 +1,63 @@
 /*CMD
   command: /del_source
-  help: حذف مصدر من كل المشاريع
+  help: حذف مصدر خارجي من قائمة المراقبة والقنوات المربوطة
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 🗑️ حذف مصدر خارجي, حذف مصدر
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
+var current_sources = Bot.getProperty("monitored_sources", ["@KSU_News", "@moe_gov_sa"]);
+if (!Array.isArray(current_sources) || current_sources.length === 0) {
+  Bot.sendMessage("⚠️ لا توجد مصادر خارجية مضافة حالياً لحذفها.\n(استخدم /add_source لإضافة مصادر جديدة)");
+  Bot.runCommand("/sources");
+  return;
+}
 
-var projects=Bot.getProperty("university_projects",[])||[];
-if(!params){Bot.sendMessage("أرسل /del_source @اسم_المصدر لحذفه من كل مشروع ظاهر فيه.");return;}
-var src=params.trim().replace(/^twitter:/i,"").toLowerCase(),count=0;
-for(var i=0;i<projects.length;i++){var p=projects[i];for(var k=0;k<2;k++){var key=k?"twitter_sources":"telegram_sources",list=p[key]||[],kept=[];for(var j=0;j<list.length;j++){if(String(list[j]).toLowerCase()===src)count++;else kept.push(list[j]);}p[key]=kept;}}
-Bot.setProperty("university_projects",projects,"json");Bot.sendMessage(count?"✅ حُذف المصدر من "+count+" رابط.":"المصدر غير موجود.");
+// إذا تم تمرير معامل الحذف مباشرة (مثل /del_source @KSU_News)
+if (params && params.trim()) {
+  var target_to_remove = params.trim();
+  var updated = [];
+  for (var i = 0; i < current_sources.length; i++) {
+    if (current_sources[i].toLowerCase() !== target_to_remove.toLowerCase()) {
+      updated.push(current_sources[i]);
+    }
+  }
+  Bot.setProperty("monitored_sources", updated, "json");
+  
+  // تحديث التعيينات أيضاً
+  var mappings = Bot.getProperty("channel_mappings", []);
+  for (var m = 0; m < mappings.length; m++) {
+    if (mappings[m].sources && Array.isArray(mappings[m].sources)) {
+      mappings[m].sources = mappings[m].sources.filter(function(s) {
+        return s.toLowerCase() !== target_to_remove.toLowerCase();
+      });
+    }
+  }
+  Bot.setProperty("channel_mappings", mappings, "json");
+  
+  Bot.sendMessage("✅ تم بنجاح حذف المصدر `" + target_to_remove + "` من قائمة المراقبة وكافة القنوات المربوطة!");
+  Bot.runCommand("/sources");
+  return;
+}
+
+var text = "🗑️ **حذف مصدر خارجي من المراقبة والنشر**:\n\n" +
+  "اضغط على زر المصدر الذي ترغب بحذفه أدناه، أو أرسل `/del_source @اسم_المصدر`:\n\n" +
+  "━━━━━━━━━━━━━━━━━━━\n";
+
+var inline_keyboard = [];
+for (var j = 0; j < current_sources.length; j++) {
+  var src_item = current_sources[j];
+  inline_keyboard.push([
+    { title: "❌ حذف " + src_item, command: "/del_source " + src_item }
+  ]);
+}
+
+inline_keyboard.push([
+  { title: "📋 العودة لقائمة المصادر", command: "/sources" },
+  { title: "🎛 اللوحة الرئيسية", command: "/start" }
+]);
+
+Bot.sendInlineKeyboard(inline_keyboard, text);

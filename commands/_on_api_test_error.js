@@ -2,17 +2,17 @@
   command: /on_api_test_error
   help: معالج فحص بوابة الذكاء الاصطناعي
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var current_model = Bot.getProperty("ai_model", "gpt-4o-mini");
+var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 
 var text = "⚡ **تقرير فحص بوابة الذكاء الاصطناعي:**\n\n" +
-  "• **البوابة**: `https://api.openai.com/v1`\n" +
+  "• **البوابة**: `https://api.hcnsec.cn/v1`\n" +
   "• **النموذج المحدد**: `" + current_model + "`\n" +
   "• **نظام الأمان اللحظي**: مفعل 🟢 (في حال أي تأخير من السيرفر الخارجي، يتدخل محرك التنسيق التلقائي فوراً لضمان عدم تأخر أي منشور).\n\n" +
   "💡 يمكنك تجربة فحص الاستجابة مرة أخرى أو تجربة صياغة منشور كامل.";

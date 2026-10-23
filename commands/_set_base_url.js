@@ -2,15 +2,12 @@
   command: /set_base_url
   help: تعديل رابط بوابة الذكاء الاصطناعي Base URL
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer: 🌐 **تعديل رابط بوابة الذكاء الاصطناعي (Base URL)**:\n\nالرابط الحالي المعتمد: `https://api.openai.com/v1`\n\nأرسل رابط الـ Base URL الجديد الآن (مثال: `https://api.openai.com/v1` أو أي endpoint مخصص):\n\n*(أرسل الرابط كرسالة عادية، أو أرسل /cancel للإلغاء)*
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 🌐 **تعديل رابط بوابة الذكاء الاصطناعي (Base URL)**:\n\nالرابط الحالي المعتمد: `https://api.hcnsec.cn/v1`\n\nأرسل رابط الـ Base URL الجديد الآن (مثال: `https://api.hcnsec.cn/v1` أو أي endpoint مخصص):\n\n*(أرسل الرابط كرسالة عادية، أو أرسل /cancel للإلغاء)*
+  keyboard: 
+  aliases: 
 CMD*/
-
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-
 
 if (!message || message.trim() == "/cancel") {
   Bot.sendMessage("تم إلغاء تعديل رابط الـ Base URL ✅");
@@ -20,7 +17,7 @@ if (!message || message.trim() == "/cancel") {
 
 var url = message.trim();
 if (url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0) {
-  Bot.sendMessage("❌ **رابط غير صالح!** يجب أن يبدأ بـ `https://` أو `http://`.\n(مثال: `https://api.openai.com/v1`)");
+  Bot.sendMessage("❌ **رابط غير صالح!** يجب أن يبدأ بـ `https://` أو `http://`.\n(مثال: `https://api.hcnsec.cn/v1`)");
   Bot.runCommand("/ai");
   return;
 }

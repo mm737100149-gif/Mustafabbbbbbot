@@ -2,12 +2,47 @@
   command: /ad
   help: عرض وتعديل إعلان خدمات الطلاب البديل
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
   aliases: 🎯 إعلان خدماتي البديل, /advertisement
 CMD*/
 
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-Bot.sendMessage("أُوقفت ميزة استبدال إعلانات الآخرين. النظام يحجب المنشور الترويجي ولا يستبدله بإعلان آخر.");
+var custom_ad = Bot.getProperty("custom_ad", "🎓 خدمات طلابية معتمدة وأكاديمية متكاملة 🎓\n" +
+  "يسرنا تقديم الدعم الأكاديمي الشامل للطلبة والباحثين:\n" +
+  "• مساعدة في البحوث والمشاريع الأكاديمية\n" +
+  "• التدقيق اللغوي وتنسيق الرسائل الجامعية\n" +
+  "• تلخيص المحاضرات والمقررات الدراسية\n\n" +
+  "📞 للتواصل والطلب مباشرة عبر المشرف: @M_S_F_G\n" +
+  "✨ جودة أكاديمية، سرعة في الإنجاز، وأسعار مناسبة للطلاب!");
+
+var ad_enabled = Bot.getProperty("ad_replacement_enabled", false);
+var status_text = ad_enabled ? "🟢 مفعل (يستبدل إعلانات حل الواجبات التجارية فقط)" : "🔴 معطل (موصى به لنشر أخبار الجامعات الأصلية كاملة مع صورها)";
+
+var text = "🎯 **إدارة إعلان خدمات الطلاب وحماية المنشورات الأصلية**:\n" +
+  "━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+  "• **الحالة الحالية**: " + status_text + "\n\n" +
+  "🛡️ **سياسة النشر الآمن**:\n" +
+  "1. **عند التعطيل (الوضع الافتراضي)**: ينشر البوت كافة منشورات قنوات الجامعات ومصادر الأخبار كما هي مع صورها الحقيقية دون أي استبدال إعلاني.\n" +
+  "2. **عند التفعيل**: يستبدل البوت حصراً إعلانات حل الواجبات والكويزات التجارية، ولا يمس منشورات شؤون الطلاب أو مشاريع التخرج الرسمية.\n\n" +
+  "📝 **نص إعلانك الترويجي البديل الحالي**:\n" +
+  "───────────────────\n" +
+  custom_ad + "\n" +
+  "───────────────────";
+
+var toggle_title = ad_enabled ? "🔴 إيقاف الاستبدال (نشر الأخبار الأصلية)" : "🟢 تفعيل استبدال الإعلانات التجارية";
+
+var inline_keyboard = [
+  [
+    { title: toggle_title, command: "/toggle_ad_replacement" }
+  ],
+  [
+    { title: "✏️ تعديل نص الإعلان", command: "/set_ad" }
+  ],
+  [
+    { title: "🎛 اللوحة الرئيسية", command: "/start" }
+  ]
+];
+
+Bot.sendInlineKeyboard(inline_keyboard, text);

@@ -2,15 +2,12 @@
   command: /users
   help: إدارة المستخدمين والصلاحيات ورتب المشرفين
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
   aliases: 👥 إدارة المستخدمين, إدارة المستخدمين, /members, /user_management
 CMD*/
-
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-
 
 var ADMIN_ID = 7607633343;
 var user_id = user ? user.telegramid : null;

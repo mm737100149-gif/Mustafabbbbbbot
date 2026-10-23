@@ -1,17 +1,28 @@
 /*CMD
   command: _default
-  help: الموجه الذكي للرسائل الافتراضية وحارس الأزرار والأوامر
+  help: الموجه الذكي للرسائل الافتراضية وحارس الأزرار والتعليقات V4.0
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
   aliases: *
 CMD*/
 
+// 1. فحص هل الرسالة تعليق في مجموعة المناقشة التابعة للقناة
+if (typeof request !== "undefined" && request && request.message) {
+  var msg = request.message;
+  if (msg.chat && (msg.chat.type === "supergroup" || msg.chat.type === "group")) {
+    if (msg.reply_to_message) {
+      Bot.runCommand("/handle_comment");
+      return;
+    }
+  }
+}
+
 var raw_text = (typeof message !== "undefined" && message) ? message.trim() : "";
 
-// 1. فحص وتوجيه نصوص أزرار الكيبورد بدقة فورية
+// 2. فحص وتوجيه نصوص أزرار الكيبورد بدقة فورية
 if (raw_text) {
   var t = raw_text;
 
@@ -120,12 +131,11 @@ if (raw_text) {
   // الكلمات الترحيبية القصيرة
   var greetings = ["مرحبا", "سلام", "الو", "هلا", "hi", "hello", "سلام عليكم", "السلام عليكم"];
   if (greetings.indexOf(t.toLowerCase()) !== -1) {
-    Bot.sendMessage("👋 **أهلاً بك يا مديرنا!**\nوجّه أي منشور أو أرسل خبراً كاملاً لإعادة صياغته ونشره، أو اختر من القائمة أدناه:");
+    Bot.sendMessage("👋 أهلاً بك يا مديرنا العزيز!\nوجّه أي منشور أو أرسل خبراً كاملاً لإعادة صياغته ونشره، أو اختر من القائمة أدناه:");
     Bot.runCommand("/start");
     return;
   }
 }
 
-// 2. إذا لم يكن أمراً من أزرار الكيبورد، وكان يحتوي على وسائط أو رسالة موجهة أو نص خبر حقيقي (أطول من 20 حرف):
-// يتم تحويله إلى معالج المنشورات الذكي
+// 3. إذا لم يكن أمراً، وكان في محادثة خاصة أو موجهاً، يحول لمعالج المنشورات
 Bot.runCommand("handle_user_post");

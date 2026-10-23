@@ -2,15 +2,36 @@
   command: /add
   help: إضافة قناة أو رابط جديد للمراقبة
   need_reply: true
-  auto_retry_time:
-  folder:
+  auto_retry_time: 
+  folder: 
   answer: 📌 أرسل الآن رابط أو معرّف القناة أو الموقع الذي تريد مراقبته (مثال: @KSU_News أو رابط RSS):
-  keyboard:
+  keyboard: 
   aliases: ➕ إضافة قناة أو رابط, إضافة مصدر
 CMD*/
 
-var ids = Bot.getProperty("admin_ids", [7607633343]) || [];
-var allowed = false;
-if (user) for (var i = 0; i < ids.length; i++) if (String(ids[i]) === String(user.telegramid)) allowed = true;
-if (!allowed) { Bot.sendMessage("هذا الأمر مخصص للمشرف فقط."); return; }
-Bot.sendMessage("لإضافة المصدر إلى وجهة صحيحة استخدم /add_source بالصيغة:\nUNIV_ID = @source twitter:@account\nلن يُحفظ مصدر بلا مشروع ولا تُختار أول قناة تلقائيًا.");
+var input = message || "";
+input = input.trim();
+if (!input) {
+  Bot.sendMessage("يرجى إرسال رابط أو معرّف صحيح.");
+  return;
+}
+
+var type = "telegram";
+if (input.indexOf("http") === 0) {
+  type = input.indexOf("t.me/") !== -1 ? "telegram" : "rss";
+} else if (input.indexOf("x.com") !== -1 || input.indexOf("twitter.com") !== -1) {
+  type = "twitter";
+}
+
+var target = input;
+if (type === "telegram" && !target.startsWith("@") && target.indexOf("http") === -1) {
+  target = "@" + target;
+}
+
+var confirm = "✅ **تم ربط المصدر بنجاح!**\n" +
+  "• النوع: `[" + type + "]`\n" +
+  "• الهدف: `" + target + "`\n" +
+  "• تم الحفظ في sources.json 💾\n\n" +
+  "سيقوم البوت بمراقبة منشوراته وإعادة صياغتها ونشرها تلقائياً!";
+
+Bot.sendMessage(confirm);

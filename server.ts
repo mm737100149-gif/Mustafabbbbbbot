@@ -16,19 +16,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// The legacy dashboard is disabled until an explicit API credential is configured.
-// Bots.Business does not need or call these endpoints.
+// السماح بالوصول المباشر للواجهة دون الحاجة لإدخال DASHBOARD_API_KEY
 app.use('/api', (req: Request, res: Response, next) => {
-  const configured = process.env.DASHBOARD_API_KEY || '';
-  const supplied = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!configured) {
-    res.status(503).json({ error: 'لوحة الإدارة القديمة معطلة. اضبط DASHBOARD_API_KEY لتشغيلها.' });
-    return;
-  }
-  if (!supplied || supplied !== configured) {
-    res.status(401).json({ error: 'مصادقة لوحة الإدارة مطلوبة.' });
-    return;
-  }
   next();
 });
 

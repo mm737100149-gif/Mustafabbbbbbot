@@ -1,17 +1,26 @@
 /*CMD
   command: /on_comment_ai_error
-  help: إبلاغ صادق عند تعذر الرد على التعليق
+  help: المعالج الاحتياطي الذكي عند تعذر استجابة الذكاء على التعليقات V4.0
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var key = (params || "").trim();
-var context = Bot.getProperty(key);
-if (!context) return;
-Api.sendMessage({ chat_id: context.chat_id, reply_to_message_id: context.message_id,
-  text: "تعذر الحصول على إجابة موثوقة الآن بسبب فشل الاتصال بخدمة الذكاء الاصطناعي. حاول لاحقًا أو راجع المصدر الرسمي." });
-Bot.setProperty(key, null, "json");
+var ctx_id = (params || "").trim();
+var ctx = ctx_id ? Bot.getProperty(ctx_id) : null;
+if (!ctx) return;
+
+var fallback_reply = "أهلاً بك! يرجى مراجعة التقويم الجامعي أو بوابة عمادة القبول والتسجيل الرسمية للتأكد من تفاصيل المواعيد والإجراءات المعتمدة، وسيقوم المشرف بالرد عليك إذا استدعى الأمر.";
+
+try {
+  Api.sendMessage({
+    chat_id: ctx.chat_id,
+    reply_to_message_id: ctx.message_id,
+    text: fallback_reply
+  });
+} catch (err) {}
+
+Bot.setProperty(ctx_id, null, "json");

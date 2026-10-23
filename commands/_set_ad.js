@@ -2,12 +2,19 @@
   command: /set_ad
   help: تعديل نص الإعلان البديل
   need_reply: true
-  auto_retry_time:
-  folder:
+  auto_retry_time: 
+  folder: 
   answer: ✏️ **أرسل الآن نص الإعلان البديل الجديد**:\n\n(اكتب النص بالكامل متضمناً رقمك أو معرفك @M_S_F_G، أو اكتب /cancel للإلغاء)
-  keyboard:
-  aliases:
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-Bot.sendMessage("أُوقفت الإعلانات البديلة نهائيًا من مسار النشر.");
+if (!message || message.trim() == "/cancel") {
+  Bot.sendMessage("تم إلغاء تعديل الإعلان ✅");
+  Bot.runCommand("/ad");
+  return;
+}
+
+Bot.setProperty("custom_ad", message, "string");
+Bot.sendMessage("✅ **تم بنجاح حفظ نص الإعلان الجديد!**\nسيتم استخدامه فوراً عند رصد أي إعلان منافس.");
+Bot.runCommand("/ad");

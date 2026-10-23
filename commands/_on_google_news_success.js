@@ -1,78 +1,172 @@
 /*CMD
   command: /on_google_news_success
-  help: فلترة أخبار جوجل بعنوان دقيق وحداثة زمنية ومنع التكرار
+  help: معالج استلام وتصفية أخبار جوجل نيوز وصياغتها ونشرها بدون تكرار V4.0
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
 if (!content) return;
-var universityId = (params || "").trim();
-if (!universityId) return;
-var projects = Bot.getProperty("university_projects", []) || [];
-var project = null;
-for (var p = 0; p < projects.length; p++) {
-  if (projects[p].id === universityId && projects[p].enabled !== false && projects[p].google_news_enabled) {
-    project = projects[p]; break;
+
+var univ_id = (params || "").trim();
+var univ_projects = Bot.getProperty("university_projects", []);
+var target_univ = null;
+
+for (var u = 0; u < univ_projects.length; u++) {
+  if (univ_projects[u].id === univ_id) {
+    target_univ = univ_projects[u];
+    break;
   }
 }
-// لا رجوع إلى أول جامعة عند معرف غير صالح.
-if (!project) return;
+if (!target_univ && univ_projects.length > 0) {
+  target_univ = univ_projects[0];
+}
+if (!target_univ) return;
 
-function decode(text) {
-  return String(text || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&quot;/g, '"')
-    .replace(/&#0?39;/g, "'").replace(/&apos;/g, "'").replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
-}
-function tag(xml, name) {
-  var match = xml.match(new RegExp("<" + name + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + name + ">", "i"));
-  return match ? match[1].trim() : "";
-}
-function norm(text) {
-  return decode(text).toLowerCase().replace(/[\u064B-\u065F\u0670]/g, "")
-    .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+function cleanHtml(html) {
+  if (!html) return "";
+  var s = html;
+  s = s.replace(/<[^>]+>/g, " ");
+  s = s.replace(/&amp;/g, "&");
+  s = s.replace(/&quot;/g, '"');
+  s = s.replace(/&#39;/g, "'");
+  s = s.replace(/&lt;/g, "<");
+  s = s.replace(/&gt;/g, ">");
+  s = s.replace(/&nbsp;/g, " ");
+  s = s.replace(/\s+/g, " ");
+  return s.trim();
 }
 
-var generic = ["قبول", "تسجيل", "جامعة", "جامعات", "تعليم", "مواعيد", "نتائج", "منح", "امتحان", "اخبار", "أخبار"];
-var aliases = [project.name].concat(project.google_news_aliases || []);
-var validAliases = [];
-for (var a = 0; a < aliases.length; a++) {
-  var alias = norm(aliases[a]);
-  if (alias.length >= 3 && generic.indexOf(alias) === -1 && validAliases.indexOf(alias) === -1) validAliases.push(alias);
+function simpleHash(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return "h" + Math.abs(h);
 }
-var maxAgeDays = parseInt(Bot.getProperty("google_news_max_age_days", 14), 10) || 14;
-var itemRe = /<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi;
-var match;
-var accepted = 0;
-while ((match = itemRe.exec(content)) !== null && accepted < 8) {
-  var xml = match[1];
-  var fullTitle = decode(tag(xml, "title"));
-  var link = decode(tag(xml, "link"));
-  var pubDate = decode(tag(xml, "pubDate"));
-  if (!fullTitle || !link || !pubDate) continue;
-  var timestamp = Date.parse(pubDate);
-  if (!timestamp || Date.now() - timestamp > maxAgeDays * 86400000 || timestamp > Date.now() + 86400000) continue;
-  var titleForMatch = norm(fullTitle);
-  var relevant = false;
-  for (var k = 0; k < validAliases.length; k++) if (titleForMatch.indexOf(validAliases[k]) !== -1) relevant = true;
-  // الكلمات العامة مثل «قبول» و«تسجيل» لا تكفي إطلاقًا.
-  if (!relevant) continue;
-  var cleanTitle = fullTitle.replace(/\s+-\s+[^-]{1,100}$/, "").trim();
-  var publisher = fullTitle.substring(cleanTitle.length).replace(/^\s+-\s+/, "").trim();
-  var text = cleanTitle + (publisher ? "\nالمصدر الصحفي: " + publisher : "") + "\n" + link;
-  Bot.runCommand("/submit_post", {
-    university_id: project.id,
-    source_type: "google_news",
-    source_id: "google_news:" + project.id,
-    source_post_id: link,
-    source_url: link,
-    raw_text: text,
-    media: [],
-    notify: false
-  });
-  accepted++;
+
+// الكلمات المفتاحية الأكاديمية الحصرية التي تهم الطلاب ومسيرتهم الدراسية
+var academic_keywords = [
+  "قبول", "تسجيل", "مواعيد", "اختبارات", "جداول", "تقويم", "مكافأة", "إعانة", 
+  "نتائج", "حذف وإضافة", "بوابة", "فصل دراسي", "تخرج", "شروط التقديم", 
+  "عمادة", "دراسة", "محاضرات", "منحة", "دبلوم", "بكالوريوس"
+];
+
+var safe_content = content.length > 15000 ? content.substring(0, 15000) : content;
+var item_chunks = safe_content.split("<item>");
+var found_article = null;
+
+for (var idx = 1; idx < item_chunks.length && idx <= 5; idx++) {
+  var item_str = item_chunks[idx].split("</item>")[0];
+
+  function grab(tag) {
+    var a = item_str.indexOf("<" + tag + ">");
+    var b = item_str.indexOf("</" + tag + ">");
+    if (a === -1 || b === -1) return "";
+    return item_str.substring(a + tag.length + 2, b);
+  }
+
+  var raw_title = cleanHtml(grab("title"));
+  var raw_desc = cleanHtml(grab("description"));
+  var raw_link = cleanHtml(grab("link"));
+
+  if (!raw_title || raw_title.length < 15) continue;
+
+  // تنظيف المصدر الخارجي من نهاية العنوان (مثل "- جريدة الرياض")
+  raw_title = raw_title.replace(/\s*-\s*[^-]+$/, "").trim();
+
+  var combined = (raw_title + " " + raw_desc).toLowerCase();
+
+  // 1. التحقق من ذكر اسم الجامعة
+  var mentions_univ = (combined.indexOf(target_univ.name.toLowerCase()) !== -1);
+  if (!mentions_univ) {
+    for (var k = 0; k < (target_univ.keywords || []).length; k++) {
+      if (combined.indexOf(target_univ.keywords[k].toLowerCase()) !== -1) {
+        mentions_univ = true;
+        break;
+      }
+    }
+  }
+  if (!mentions_univ) continue;
+
+  // 2. التحقق الصارم من أن الخبر يتعلق بالمحتوى الدراسي ومصالح الطلاب حصراً (منع الأخبار الروتينية غير الأكاديمية)
+  var has_academic_substance = false;
+  for (var ak = 0; ak < academic_keywords.length; ak++) {
+    if (combined.indexOf(academic_keywords[ak]) !== -1) {
+      has_academic_substance = true;
+      break;
+    }
+  }
+  if (!has_academic_substance) continue;
+
+  // 3. منع التكرار ببصمة العنوان والرابط
+  var article_hash = simpleHash(raw_title + "|" + raw_link);
+  var seen_key = "seen_gnews_" + article_hash;
+  if (Bot.getProperty(seen_key)) continue;
+
+  Bot.setProperty(seen_key, true, "boolean");
+  found_article = {
+    title: raw_title,
+    desc: raw_desc,
+    link: raw_link
+  };
+  break;
 }
+
+if (!found_article) {
+  return;
+}
+
+var article_text = "عنوان الخبر: " + found_article.title + "\n\n" +
+  "تفاصيل الخبر من المصادر الرسمية: " + found_article.desc;
+
+if (found_article.link) {
+  article_text += "\n\nرابط البوابة أو المصدر: " + found_article.link;
+}
+
+// حفظ بيانات الإرسال والتوجيه لقناة هذه الجامعة حصراً
+var ctx_id = "ctx_gnews_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+Bot.setProperty(ctx_id, {
+  media_type: "text",
+  media_id: "",
+  raw_text: article_text,
+  targets: [target_univ.target_channel || "@jhdhhdcj"],
+  target_univ: target_univ.name,
+  source_origin: "google_news",
+  created_at: Date.now()
+}, "json");
+
+var base_url = Bot.getProperty("ai_base_url") || "https://api.hcnsec.cn/v1";
+var api_key = Bot.getProperty("ai_api_key") || "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii";
+var current_model = Bot.getProperty("ai_model") || "DeepSeek-V4.1-Flash";
+
+var system_prompt = "أنت محرر ومسؤول النشر الأكاديمي الرسمي المعتمد لقناة طلاب: (" + target_univ.name + ").\n" +
+  "صِغ هذا الخبر الجامعي المهم بأسلوب رسمي وراقٍ ومباشر للطلاب:\n" +
+  "1. ابدأ بعنوان بارز يلخص الخبر الأكاديمي (📌 إعلان هام بشأن...)\n" +
+  "2. نظّم المواعيد والخطوات والشروط بنقاط واضحة ومباشرة\n" +
+  "3. ممنوع ذكر اسم صحيفة أو موقع إخباري، واكتب بأسلوبك كإعلان جامعي رسمي موجه للطلاب\n" +
+  "4. احتفظ بكافة الروابط الرسمية للجامعة دون حذف\n" +
+  "5. اختم بسؤال تفاعلي للطلاب (💬) وهاشتاجات الجامعة الرسمية.";
+
+HTTP.post({
+  url: base_url.replace(/\/+$/, "") + "/chat/completions",
+  headers: {
+    "Authorization": "Bearer " + api_key,
+    "Content-Type": "application/json"
+  },
+  body: {
+    model: current_model,
+    messages: [
+      { role: "system", content: system_prompt },
+      { role: "user", content: article_text }
+    ],
+    temperature: 0.2,
+    max_tokens: 1500
+  },
+  success: "/on_ai_post_success " + ctx_id,
+  error: "/on_ai_post_error " + ctx_id,
+  background: true
+});

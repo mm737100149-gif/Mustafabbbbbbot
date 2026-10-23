@@ -2,15 +2,12 @@
   command: /set_api_key
   help: تعديل مفتاح الـ API Key للذكاء الاصطناعي
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer: 🔑 **تعديل مفتاح الـ API Key الخاص بالذكاء الاصطناعي**:\n\nالمفتاح الافتراضي المعتمد:\n`[محذوف من الكود — اضبطه من /set_api_key]`\n\nأرسل مفتاح الـ API Key الجديد الآن:\n\n*(أرسل المفتاح كرسالة عادية، أو أرسل /cancel للإلغاء)*
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 🔑 **تعديل مفتاح الـ API Key الخاص بالذكاء الاصطناعي**:\n\nالمفتاح الافتراضي المعتمد:\n`sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii`\n\nأرسل مفتاح الـ API Key الجديد الآن:\n\n*(أرسل المفتاح كرسالة عادية، أو أرسل /cancel للإلغاء)*
+  keyboard: 
+  aliases: 
 CMD*/
-
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-
 
 if (!message || message.trim() == "/cancel") {
   Bot.sendMessage("تم إلغاء تعديل المفتاح ✅");

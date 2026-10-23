@@ -2,16 +2,16 @@
   command: /on_api_test_success
   help: معالج نجاح اختبار الذكاء الاصطناعي
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
 var t_start = params ? parseInt(params) : Date.now();
 var duration = Date.now() - t_start;
-var current_model = Bot.getProperty("ai_model", "gpt-4o-mini");
+var current_model = Bot.getProperty("ai_model", "DeepSeek-V4.1-Flash");
 
 var reply = "جاهز";
 try {

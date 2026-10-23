@@ -1,17 +1,41 @@
 /*CMD
   command: /del_university
-  help: حذف مشروع محدد
-  need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  help: حذف مشروع جامعة وقناة نشر من النظام
+  need_reply: true
+  auto_retry_time: 
+  folder: 
+  answer: 🗑️ **حذف جامعة وقناة نشر**:\n\nأرسل اسم الجامعة أو معرفها أو قناة النشر الخاصة بها لحذفها من النظام:\n📌 **مثال**: `جامعة الملك سعود` أو `@jhdhhdcj`\n\n(أرسل الآن، أو اكتب /cancel للإلغاء)
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
+if (!message || message.trim() === "/cancel") {
+  Bot.sendMessage("تم إلغاء عملية الحذف ✅");
+  Bot.runCommand("/universities");
+  return;
+}
 
-var id=(params||message||"").trim();if(!id||id==="/cancel"){Bot.sendMessage("أرسل معرف المشروع من /universities");return;}var projects=Bot.getProperty("university_projects",[])||[],kept=[],name="";for(var i=0;i<projects.length;i++){if(projects[i].id===id)name=projects[i].name;else kept.push(projects[i]);}if(!name){Bot.sendMessage("المشروع غير موجود.");return;}Bot.setProperty("university_projects",kept,"json");Bot.sendMessage("✅ حُذف "+name);Bot.runCommand("/universities");
+var query = message.trim().toLowerCase();
+var univ_projects = Bot.getProperty("university_projects", []);
+var initial_len = univ_projects.length;
+
+var new_projects = [];
+var deleted_name = "";
+
+for (var i = 0; i < univ_projects.length; i++) {
+  var u = univ_projects[i];
+  if (u.id.toLowerCase() === query || u.name.toLowerCase() === query || u.target_channel.toLowerCase() === query) {
+    deleted_name = u.name + " (" + u.target_channel + ")";
+  } else {
+    new_projects.push(u);
+  }
+}
+
+if (new_projects.length < initial_len) {
+  Bot.setProperty("university_projects", new_projects, "json");
+  Bot.sendMessage("✅ تم بنجاح حذف: " + deleted_name);
+} else {
+  Bot.sendMessage("⚠️ لم يتم العثور على جامعة مطابقة لـ: `" + message.trim() + "`");
+}
+
+Bot.runCommand("/universities");

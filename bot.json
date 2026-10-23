@@ -253,6 +253,15 @@
     },
     {
       "name": "handle_user_post"
+    },
+    {
+      "name": "/handle_comment"
+    },
+    {
+      "name": "/on_comment_ai_success"
+    },
+    {
+      "name": "/on_comment_ai_error"
     }
   ]
 }

@@ -2,15 +2,12 @@
   command: /univ_toggle
   help: تفعيل أو إيقاف النشر التلقائي لجامعة محددة بشكل مستقل
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
-
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-
 
 var univ_id = (params || "").trim();
 var univ_projects = Bot.getProperty("university_projects", []);
@@ -22,7 +19,7 @@ var univ_name = "";
 
 for (var i = 0; i < univ_projects.length; i++) {
   if (univ_projects[i].id === univ_id) {
-    univ_projects[i].enabled = univ_projects[i].enabled === false;
+    univ_projects[i].enabled = !univ_projects[i].enabled;
     new_state = univ_projects[i].enabled;
     univ_name = univ_projects[i].name;
     found = true;

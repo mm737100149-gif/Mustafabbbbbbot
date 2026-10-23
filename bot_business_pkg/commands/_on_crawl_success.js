@@ -98,6 +98,7 @@ function deepCleanWebGarbage(html) {
 var extracted_text = deepCleanWebGarbage(raw_html_text);
 
 // استخراج الصورة الحقيقية
+// 101: استخراج الصورة الحقيقية
 function extractValidPhoto(chunk) {
   if (!chunk) return null;
   var photoWrapMatch = chunk.match(/class="[^"]*tgme_widget_message_photo_wrap[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i);
@@ -114,110 +115,58 @@ function extractValidPhoto(chunk) {
   return null;
 }
 
+
 var image_url = extractValidPhoto(post_chunk);
 
-// حفظ معرف المنشور لمنع التكرار
+// 🛡️ منع التكرار (نظام البصمة الرقمية المطور)
+function getSimpleHash(str) {
+  var hash = 0;
+  if (!str) return "0";
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return "h_" + Math.abs(hash);
+}
+
+var post_hash = getSimpleHash(extracted_text.substring(0, 150) + (image_url || "")); 
+if (Bot.getProperty("seen_" + post_hash)) return;
+Bot.setProperty("seen_" + post_hash, true, "boolean");
+
 Bot.setProperty("last_crawl_id_" + channel_name, max_id, "integer");
 
-// إذا كان النص بعد التنظيف فارغاً أو تافهاً، نتجاهله فوراً
-if (!extracted_text || extracted_text.length < 25) {
+if (!extracted_text || extracted_text.length < 15) {
   return;
 }
 
-// 4. مطابقة الجامعة المستهدفة وقناة النشر المخصصة لها حصراً
 var univ_projects = Bot.getProperty("university_projects", []);
 var target_univ = null;
 
-// أولاً: البحث بالمعرف المربوط بالطلب
 if (bound_univ_id) {
   for (var u1 = 0; u1 < univ_projects.length; u1++) {
-    if (univ_projects[u1].id === bound_univ_id) {
-      target_univ = univ_projects[u1];
-      break;
-    }
+    if (univ_projects[u1].id === bound_univ_id) { target_univ = univ_projects[u1]; break; }
   }
 }
 
-// ثانياً: البحث بقناة المصدر
 if (!target_univ) {
-  var clean_at_ch = "@" + channel_name;
   for (var u2 = 0; u2 < univ_projects.length; u2++) {
     var tg_list = univ_projects[u2].telegram_sources || [];
     var tw_list = univ_projects[u2].twitter_sources || [];
     var combined_list = tg_list.concat(tw_list);
     for (var s = 0; s < combined_list.length; s++) {
-      var s_cl = combined_list[s].replace(/^@/, "").toLowerCase();
-      if (s_cl === channel_name) {
-        target_univ = univ_projects[u2];
-        break;
+      if (combined_list[s].replace(/^@/, "").toLowerCase() === channel_name) {
+        target_univ = univ_projects[u2]; break;
       }
     }
     if (target_univ) break;
   }
 }
 
-// إذا لم نجد جامعة، نأخذ الجامعة الأولى الافتراضية
-if (!target_univ && univ_projects.length > 0) {
-  target_univ = univ_projects[0];
-}
+if (!target_univ && univ_projects.length > 0) target_univ = univ_projects[0];
 if (!target_univ) return;
-
-// 5. التوجيه الأكاديمي المباشر:
-// كافة منشورات المصدر المعتمد (سواء تواريخ، مواعيد اختبارات، أو إعلانات طلابية) تُنشر مباشرة للجامعة المحددة
-// ولا يشترط أبداً وجود اسم الجامعة في نص المنشور لضمان وصول المواعيد والجداول للطلاب كاملة
-
-// 6. فحص إعلانات المنافسين واستبدالها (معطل افتراضياً لضمان نشر كافة أخبار المصدر مع صورها)
-var ad_replacement_enabled = Bot.getProperty("ad_replacement_enabled", false);
-var ad_keywords = ["حل واجبات بمقابل", "حل واجبات واختبارات", "حل كويزات", "حل فاينل", "حل اسايمنت", "كتابة بحوث بمقابل", "عمل بحوث ورسائل بمقابل", "إعلان مدفوع للخدمات"];
-var is_ad = false;
-
-if (ad_replacement_enabled && extracted_text) {
-  for (var a = 0; a < ad_keywords.length; a++) {
-    if (extracted_text.indexOf(ad_keywords[a]) !== -1) {
-      is_ad = true;
-      break;
-    }
-  }
-}
-
-function toSafeHtml(txt) {
-  if (!txt) return "";
-  var s = txt;
-  s = s.replace(/&/g, "&amp;");
-  s = s.replace(/</g, "&lt;");
-  s = s.replace(/>/g, "&gt;");
-  s = s.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-  return s;
-}
 
 var dest_target = target_univ.target_channel || "@jhdhhdcj";
 
-if (is_ad) {
-  var custom_ad = Bot.getProperty("custom_ad", "🎓 **خدمات طلابية وأكاديمية معتمدة ومتكاملة** 🎓\n\n" +
-    "يسرنا تقديم الدعم الأكاديمي الشامل للطلبة والباحثين:\n" +
-    "• مساعدة متخصصة في البحوث ومشاريع التخرج\n" +
-    "• التدقيق اللغوي وتنسيق الرسائل العلمية\n" +
-    "• تلخيص المقررات الدراسية وإعداد العروض\n\n" +
-    "📞 **للتواصل والطلب المباشر عبر المشرف**: @M_S_F_G\n" +
-    "✨ *جودة أكاديمية، دقة في المواعيد، وأسعار خاصة للطلاب!*");
-
-  var safe_ad = toSafeHtml(custom_ad);
-  try {
-    if (image_url) {
-      try {
-        Api.sendPhoto({ chat_id: dest_target, photo: image_url, caption: safe_ad, parse_mode: "HTML" });
-      } catch (e1) {
-        Api.sendMessage({ chat_id: dest_target, text: safe_ad, parse_mode: "HTML" });
-      }
-    } else {
-      Api.sendMessage({ chat_id: dest_target, text: safe_ad, parse_mode: "HTML" });
-    }
-  } catch (err) {}
-  Bot.sendMessage("🎯 **تم سحب منشور إعلاني واستبداله بإعلان خدماتك في قناة (" + target_univ.name + ")**: " + dest_target);
-  return;
-}
-
-// 7. إرسال إلى الذكاء الاصطناعي مع تعليمات صارمة مخصصة للجامعة
 Bot.setProperty("pending_media_type", image_url ? "photo" : "text", "string");
 Bot.setProperty("pending_media_id", image_url || "", "string");
 Bot.setProperty("pending_raw_text", extracted_text, "string");
@@ -228,32 +177,37 @@ var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
 var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 
-var system_prompt = "أنت محرر محتوى أكاديمي رسمي مخصص حصراً لطلاب: (" + target_univ.name + ").\n" +
-  "مهمتك قراءة المنشور وصياغته بأسلوب إخباري مميز ومباشر للطلاب:\n" +
-  "1. عنوان بارز يوضح موضوع الخبر والجامعة (📌)\n" +
-  "2. محتوى منظم في نقاط محددة وسهلة القراءة تبرز المواعيد والخطوات والشروط\n" +
-  "3. ممنوع منعاً باتاً ذكر أسماء قنوات سابقة أو روابط دعائية أو إيموجيات فارغة\n" +
-  "4. احذف أي رموز تشويش أو أحرف زائدة مثل &nbsp; أو X\n" +
-  "5. دعوة تفاعلية قصيرة للطلاب (💬)\n" +
-  "6. هاشتاجات الجامعة الرسمية (مثال: #" + target_univ.name.replace(/\s+/g, "_") + " #أخبار_الجامعة)\n" +
-  "قاعدة صارمة: إذا كان الخبر لا يمت بصلة لهذه الجامعة أو طلابها، رد بكلمة واحدة فقط: [IGNORED]";
+
+
+var system_prompt = "# الهوية: المحرر الأكاديمي الرسمي الذكي (Human-Like Academic Editor).\n" +
+  "أنت لست مجرد بوت؛ أنت محرر خبير يعمل في المكتب الإعلامي للجامعة.\n\n" +
+  "## المهمة:\n" +
+  "أعد صياغة الخبر المرفق بأسلوب بشري، رسمي، وأكاديمي جداً، ليكون جاهزاً للنشر في قناة تيليجرام رسمية.\n\n" +
+  "## القواعد الصارمة:\n" +
+  "1. **المحتوى الشامل**: انشر كل الأخبار الدراسية، الجداول، المواعيد، النتائج، والتنبيهات الهامة من المصدر فوراً.\n" +
+  "2. **الفلترة الصارمة للإعلانات**: استبعد تماماً الإعلانات التجارية (حل الواجبات، بيع الحسابات، قنوات التلخيص الخارجية، الخدمات الطلابية المدفوعة) وأجب بـ [IGNORED].\n" +
+  "3. **منع المقدمات**: لا تضع أي مقدمات مثل \"إليك الخبر\" أو \"وفقاً لـ\". ابدأ بالخبر مباشرة.\n" +
+  "4. **منع المصادر**: لا تذكر أي قناة أو حساب تويتر أو رابط مصدر. الخبر يصدر منك أنت كجهة رسمية.\n" +
+  "5. **التنسيق الاحترافي**:\n" +
+  "   - استخدم 📌 للأخبار العامة.\n" +
+  "   - استخدم ⚠️ للمواعيد النهائية والتحذيرات.\n" +
+  "   - استخدم 📅 للتواريخ والجداول.\n" +
+  "   - استخدم 🔗 للروابط الرسمية (اترك الرابط كما هو).\n" +
+  "6. **الأسلوب**: لغة عربية فصحى، مباشرة، رصينة، واحترافية جداً (بشرية تماماً).\n";
+
 
 HTTP.post({
   url: base_url.replace(/\/+$/, "") + "/chat/completions",
-  headers: {
-    "Authorization": "Bearer " + api_key,
-    "Content-Type": "application/json"
-  },
+  headers: { "Authorization": "Bearer " + api_key, "Content-Type": "application/json" },
   body: {
     model: current_model,
-    messages: [
-      { role: "system", content: system_prompt },
-      { role: "user", content: extracted_text }
-    ],
-    temperature: 0.3,
-    max_tokens: 450
+    messages: [ { role: "system", content: system_prompt }, { role: "user", content: extracted_text } ],
+    temperature: 0.35,
+    max_tokens: 650
   },
   success: "/on_ai_post_success",
   error: "/on_ai_post_error",
   background: true
 });
+
+

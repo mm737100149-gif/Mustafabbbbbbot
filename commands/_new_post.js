@@ -1,13 +1,24 @@
 /*CMD
   command: /new_post
-  help: بدء نشر يدوي آمن
+  help: إنشاء ونشر خبر أكاديمي جديد مباشرة من داخل الشات
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 📝 صياغة ونشر خبر فوري, صياغة ونشر خبر فوري, 📝 نشر خبر جديد, /post, نشر خبر, نشر خبر فوري
 CMD*/
 
-var ids=Bot.getProperty("admin_ids",[7607633343])||[7607633343],ok=false;if(user){for(var i=0;i<ids.length;i++)if(String(ids[i])===String(user.telegramid))ok=true;}if(!ok){Bot.sendMessage("هذا الأمر مخصص للمشرف فقط.");return;}
-User.setProperty("pending_direct_project","","string");Bot.sendMessage("أرسل النص أو الوسائط. إذا وُجد أكثر من مشروع فسيُطلب اختيار الوجهة صراحة. أرسل /cancel للإلغاء.");Bot.run({command:"/receive_new_post"});
+var text = "📝 **صانع ومنسق الأخبار الأكاديمية الفوري (Instant Post Publisher)**:\n" +
+  "━━━━━━━━━━━━━━━━━━━\n" +
+  "تتيح لك هذه الميزة كتابة أو لصق أي خبر أو إرسال صورة / فيديو / ملف PDF، وسيقوم البوت تلقائياً بما يلي:\n\n" +
+  "1️⃣ إعادة صياغة المحتوى أكاديمياً بالذكاء الاصطناعي (DeepSeek-V4-Flash)\n" +
+  "2️⃣ إضافة علامات التنسيق الأكاديمي (العنوان، النقاط، الهاشتاجات)\n" +
+  "3️⃣ إلحاق إعلان خدماتك الطلابية المعتمدة (@M_S_F_G)\n" +
+  "4️⃣ النشر المباشر في قنواتك المستهدفة المربوطة في النظام!\n\n" +
+  "━━━━━━━━━━━━━━━━━━━\n" +
+  "👇 **أرسل الآن نص الخبر أو الصورة/الفيديو/المستند مباشرة كرسالة عادية:**\n" +
+  "*(أو أرسل /cancel لإلغاء النشر والعودة)*";
+
+Bot.sendMessage(text);
+Bot.run({ command: "/receive_new_post" });

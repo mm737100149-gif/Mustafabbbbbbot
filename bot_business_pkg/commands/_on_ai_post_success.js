@@ -195,6 +195,7 @@ Bot.setProperty("total_processed", total, "integer");
 Bot.setProperty("last_post_title", rephrased_text.split("\n")[0] || "تحديث أكاديمي جديد", "string");
 Bot.setProperty("last_post_time", new Date().toLocaleTimeString(), "string");
 
+// 198: 
 var confirm_text = "✅ **تمت صياغة ونشر الخبر في قناة (" + target_univ_name + ") بنجاح!**\n\n" +
   "• **قناة النشر**: `" + target_names.join("`، `") + "`\n" +
   "• **النموذج الذكي**: `" + current_model + "`\n" +
@@ -204,9 +205,15 @@ if (failed_targets.length > 0) {
   confirm_text += "⚠️ **تعذر الإرسال إلى (" + failed_targets.join("، ") + ")**: يرجى التأكد من رفع البوت كمشرف في القناة.\n\n";
 }
 
+// حل مشكلة "Message is too long": قص المعاينة إذا كانت طويلة جداً
+var preview_text = rephrased_text;
+if (preview_text.length > 2000) {
+  preview_text = preview_text.substring(0, 1990) + "\n\n...(بقية المنشور في القناة)";
+}
+
 confirm_text += "👁️ **معاينة المنشور المنشور للطلاب:**\n" +
   "───────────────────\n" +
-  rephrased_text;
+  preview_text;
 
 var inline_keyboard = [
   [
@@ -220,3 +227,4 @@ var inline_keyboard = [
 ];
 
 Bot.sendInlineKeyboard(inline_keyboard, confirm_text);
+

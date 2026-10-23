@@ -1,27 +1,42 @@
 /*CMD
   command: /add_univ_step3
-  help: معالج الإضافة — مصادر تيليجرام
+  help: معالج الربط الهرمي - الخطوة 3 من 5 (استلام قنوات التليجرام وتحديد حسابات تويتر/X المصدرة)
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
-
-var wizard = User.getProperty("univ_wizard");
-if (!wizard || wizard.step !== 3) { Bot.sendMessage("انتهت جلسة الإعداد. ابدأ من /add_university"); return; }
-if (!message || message.trim() === "/cancel") { User.setProperty("univ_wizard", null, "json"); Bot.sendMessage("أُلغي المعالج."); return; }
-wizard.telegram_sources = [];
-if (!/^(?:تخطي|skip)$/i.test(message.trim())) {
-  var tg = message.split(/[\s,;]+/);
-  for (var i=0;i<tg.length;i++) if (tg[i]) wizard.telegram_sources.push(tg[i]);
+if (!message || message.trim() === "/cancel") {
+  Bot.sendMessage("تم إلغاء معالج الربط الهرمي بنجاح ✅");
+  Bot.runCommand("/universities");
+  return;
 }
-wizard.step=4; User.setProperty("univ_wizard", wizard, "json");
-Bot.sendMessage("أرسل حسابات X مفصولة بمسافات، أو اكتب تخطي.");
+
+var tg_input = message.trim();
+var tg_sources = [];
+if (tg_input.toLowerCase() !== "تخطي" && tg_input.toLowerCase() !== "skip") {
+  var parts = tg_input.split(/[\s,]+/);
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i].trim();
+    if (p) {
+      if (!p.startsWith("@") && !p.startsWith("https://")) p = "@" + p;
+      tg_sources.push(p);
+    }
+  }
+}
+
+Bot.setProperty("temp_univ_tg", tg_sources, "json");
+
+var prompt_step4 = "✅ **تم حفظ قنوات التليجرام المصدرة (" + tg_sources.length + ")**: " + (tg_sources.length > 0 ? tg_sources.join("، ") : "تم التخطي") + "\n" +
+  "━━━━━━━━━━━━━━━━━━━\n\n" +
+  "🐦 **الخطوة 4 من 5: [ تحديد حسابات تويتر (X) المصدرة ]**:\n\n" +
+  "أرسل معرفات حسابات تويتر/X المصدرة التابعة لهذه الجامعة (مفصولة بمسافة أو فاصلة):\n" +
+  "📌 **مثال**: `@ksu_news @ksu_portal` أو `@aum_kuwait`\n\n" +
+  "💡 *ملاحظة: يمكنك كتابة كلمة*: `تخطي`\n\n" +
+  "(أرسل المعرفات الآن، أو اكتب `تخطي`، أو اكتب /cancel للإلغاء)";
+
+Bot.sendMessage(prompt_step4);
 Bot.runCommand("/add_univ_step4");

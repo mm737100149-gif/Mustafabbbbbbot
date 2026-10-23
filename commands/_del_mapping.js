@@ -1,20 +1,45 @@
 /*CMD
   command: /del_mapping
-  help: حذف مشروع وربطه الفعلي
+  help: حذف ربط قناة نشر
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
+var mappings = Bot.getProperty("channel_mappings", []);
 
-var projects=Bot.getProperty("university_projects",[])||[];
-if(!params){var buttons=[];for(var i=0;i<projects.length;i++)buttons.push([{title:"حذف "+projects[i].name,command:"/del_mapping "+projects[i].id}]);Bot.sendInlineKeyboard(buttons,"اختر المشروع الذي تريد حذفه:");return;}
-var kept=[],deleted="";for(var j=0;j<projects.length;j++){if(projects[j].id===params.trim())deleted=projects[j].name;else kept.push(projects[j]);}
-if(!deleted){Bot.sendMessage("المشروع غير موجود.");return;}Bot.setProperty("university_projects",kept,"json");Bot.sendMessage("✅ حُذف "+deleted);Bot.runCommand("/mapping");
+if (params) {
+  var target_to_remove = params.trim().toLowerCase();
+  var filtered = [];
+  for (var i = 0; i < mappings.length; i++) {
+    if (mappings[i].target.toLowerCase() !== target_to_remove) {
+      filtered.push(mappings[i]);
+    }
+  }
+  Bot.setProperty("channel_mappings", filtered, "json");
+  Bot.sendMessage("✅ تم بنجاح حذف ربط القناة `" + params.trim() + "`!");
+  Bot.runCommand("/mapping");
+  return;
+}
+
+if (!mappings || mappings.length === 0) {
+  Bot.sendMessage("⚠️ لا توجد قنوات مربوطة حالياً لحذفها.");
+  Bot.runCommand("/mapping");
+  return;
+}
+
+var inline_keyboard = [];
+for (var j = 0; j < mappings.length; j++) {
+  var tg = mappings[j].target;
+  inline_keyboard.push([
+    { title: "❌ حذف " + tg, command: "/del_mapping " + tg }
+  ]);
+}
+inline_keyboard.push([
+  { title: "🔙 إلغاء والعودة", command: "/mapping" }
+]);
+
+Bot.sendInlineKeyboard(inline_keyboard, "🗑️ **اختر القناة التي ترغب في إلغاء ربطها ومسح مصادرها:**");

@@ -1,23 +1,38 @@
 /*CMD
   command: /add_university
-  help: معالج إضافة مشروع وقناة نشر — الخطوة الأولى
+  help: معالج الربط الهرمي - الخطوة 1 من 5 (تحديد قناة النشر الهدف)
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer: أرسل قناة النشر الهدف، مثل @channel أو -1001234567890. أرسل /cancel للإلغاء.
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 🏛️ **معالج الربط الهرمي الشامل لمشروع جامعة وقناة نشر (الخطوة 1 من 5)**:\n━━━━━━━━━━━━━━━━━━━\n\n🎯 **الخطوة الأولى: [ تحديد قناة النشر الهدف ]**\n\nأرسل معرف قناة النشر المستهدفة على تيليجرام التي ترغب بربطها ليتم النشر فيها حصراً:\n📌 **مثال**: `@jhdhhdcj` أو `-1001234567890`\n\n💡 *(تأكد من إضافة البوت مشرفاً Admin فيها مع صلاحية النشر وإرسال الرسائل)*\n\n(أرسل المعرف الآن، أو اكتب /cancel للإلغاء)
+  keyboard: 
+  aliases: ➕ معالج ربط جامعة وقناة (5 خطوات), ➕ معالج ربط جامعة وقناة, ➕ إضافة جامعة وقناة نشر, /new_univ, ➕ إضافة جامعة وقناة نشر جديدة, إضافة جامعة
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
+if (!message || message.trim() === "/cancel") {
+  Bot.sendMessage("تم إلغاء معالج الربط الهرمي بنجاح ✅");
+  Bot.runCommand("/universities");
+  return;
+}
 
-if (!message || message.trim() === "/cancel") { Bot.sendMessage("أُلغي المعالج."); return; }
-var channel = message.trim();
-if (channel.indexOf("@") !== 0 && channel.indexOf("-100") !== 0) channel = "@" + channel;
-if (!/^@[A-Za-z0-9_]{5,32}$/.test(channel) && !/^-100\d+$/.test(channel)) { Bot.sendMessage("معرف القناة غير صالح. أرسل @username أو معرفًا رقميًا يبدأ بـ -100."); Bot.runCommand("/add_university"); return; }
-User.setProperty("univ_wizard", { step: 2, target_channel: channel }, "json");
-Bot.sendMessage("تم حفظ القناة " + channel + "\nأرسل الآن الاسم الرسمي للجامعة أو الكلية، أو /cancel للإلغاء.");
+var raw_channel = message.trim();
+if (!raw_channel.startsWith("@") && !raw_channel.startsWith("-100")) {
+  raw_channel = "@" + raw_channel;
+}
+
+// حفظ القناة المستهدفة مؤقتاً والانتقال للخطوة 2
+Bot.setProperty("temp_univ_channel", raw_channel, "string");
+
+var prompt_step2 = "✅ **تم تعيين قناة النشر الهدف**: `" + raw_channel + "`\n" +
+  "━━━━━━━━━━━━━━━━━━━\n\n" +
+  "🎓 **الخطوة 2 من 5: [ تحديد اسم الجامعة / القسم بالتفصيل ]**:\n\n" +
+  "أرسل الاسم الرسمي والواضح للجامعة أو الكلية أو القسم بالتفصيل لتوجيه سياق الذكاء الاصطناعي بدقة:\n" +
+  "📌 **أمثلة**:\n" +
+  "• `جامعة الشرق الأوسط الأمريكية (AUM)`\n" +
+  "• `جامعة الملك سعود - كلية الهندسة`\n" +
+  "• `جامعة الكويت - عمادة القبول والتسجيل`\n\n" +
+  "💡 *(هذا الاسم سيستخدمه الذكاء الاصطناعي لعزل الأخبار ومنع خلطها مع أي جامعة أخرى)*\n\n" +
+  "(أرسل الاسم الآن، أو اكتب /cancel للإلغاء)";
+
+Bot.sendMessage(prompt_step2);
 Bot.runCommand("/add_univ_step2");

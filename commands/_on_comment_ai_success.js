@@ -1,31 +1,41 @@
 /*CMD
   command: /on_comment_ai_success
-  help: نشر رد الذكاء على تعليق الطالب مع حفظ سياق خاص به
+  help: نشر رد المشرف الأكاديمي على تعليق الطالب في مجموعة المناقشة V4.0
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var key = (params || "").trim();
-var context = Bot.getProperty(key);
-if (!key || !context) return;
+var ctx_id = (params || "").trim();
+var ctx = ctx_id ? Bot.getProperty(ctx_id) : null;
+if (!ctx) return;
+
 var answer = "";
 try {
   var data = JSON.parse(content);
-  answer = String(data.choices[0].message.content || "").trim();
+  if (data.choices && data.choices[0] && data.choices[0].message) {
+    answer = data.choices[0].message.content.trim();
+  }
 } catch (e) {}
+
 if (!answer) {
-  Bot.runCommand("/on_comment_ai_error " + key);
+  Bot.runCommand("/on_comment_ai_error " + ctx_id);
   return;
 }
-answer = answer.substring(0, 3900);
-Api.sendMessage({ chat_id: context.chat_id, reply_to_message_id: context.message_id, text: answer, disable_web_page_preview: true });
-var history = Bot.getProperty("comment_history_" + context.user_id, []) || [];
-history.push({ role: "user", content: context.text });
-history.push({ role: "assistant", content: answer });
-if (history.length > 12) history = history.slice(history.length - 12);
-Bot.setProperty("comment_history_" + context.user_id, history, "json");
-Bot.setProperty(key, null, "json");
+
+// تنظيف الرد من أي علامات غير لائقة
+answer = answer.replace(/^(الرد:|الإجابة:)\s*/i, "").trim();
+
+try {
+  Api.sendMessage({
+    chat_id: ctx.chat_id,
+    reply_to_message_id: ctx.message_id,
+    text: answer
+  });
+} catch (err) {}
+
+// تنظيف السياق
+Bot.setProperty(ctx_id, null, "json");

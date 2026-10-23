@@ -2,12 +2,29 @@
   command: /login_code
   help: استلام كود OTP وطلب التحقق بخطوتين 2FA
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-Bot.sendMessage("لا يدعم هذا الإصدار تسجيل MTProto داخل Bots.Business. لن يطلب البوت رقم هاتف أو رمز تحقق أو كلمة مرور أو StringSession. استخدم المصادر العامة أو أضف البوت مشرفًا في القناة المصدر؛ أما القنوات الخاصة فتحتاج خدمة MTProto منفصلة وآمنة.");
+if (!message || message.trim() == "/cancel") {
+  Bot.sendMessage("تم إلغاء عملية تسجيل الدخول بنجاح ✅");
+  Bot.runCommand("/userbot");
+  return;
+}
+
+var code = message.trim().replace(/\s+/g, "");
+Bot.setProperty("userbot_login_otp", code, "string");
+
+var text = "🔐 **الخطوة (3/3)**: التحقق بخطوتين (2FA)\n\n" +
+  "إذا كان حسابك محمياً بكلمة مرور سحابية إضافية (Two-Step Verification Password)، يرجى إرسالها الآن.\n\n" +
+  "⚡ **إذا لم يكن حسابك محمياً برمز 2FA**:\n" +
+  "أرسل كلمة `تخطي` أو `skip` لإتمام تسجيل الجلسة فوراً.\n\n" +
+  "*(أرسل كلمة المرور أو كلمة 'تخطي' الآن، أو /cancel للإلغاء)*";
+
+Bot.sendMessage(text);
+Bot.run({
+  command: "/login_2fa"
+});

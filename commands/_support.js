@@ -2,15 +2,12 @@
   command: /support
   help: الدعم الفني المباشر والمساعدة الفورية للمشرفين والطلاب
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
   aliases: 📞 الدعم الفني والمساعدة, الدعم الفني والمساعدة, الدعم الفني, الدعم, /help_admin, مساعدة, المساعدة
 CMD*/
-
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-
 
 var ADMIN_USER = "M_S_F_G";
 var ADMIN_ID = 7607633343;
@@ -21,7 +18,7 @@ var text = "📞 **مركز الدعم الفني والمساعدة المبا�
   "👑 **المشرف العام المعتمد**: @" + ADMIN_USER + "\n" +
   "🆔 **المعرف الرقمي للمشرف**: `" + ADMIN_ID + "`\n" +
   "🤖 **معرف البوت الأساسي**: @" + BOT_USERNAME + "\n" +
-  "📢 **قناة النشر الافتراضية**: `@your_channel`\n" +
+  "📢 **قناة النشر الافتراضية**: `@jhdhhdcj`\n" +
   "⚡ **حالة المحرك وسيرفر المعالجة**: 🟢 متصل ويعمل 24/7\n\n" +
   "━━━━━━━━━━━━━━━━━━━\n" +
   "💡 **إرشادات سريعة لحل المشاكل الشائعة**:\n" +

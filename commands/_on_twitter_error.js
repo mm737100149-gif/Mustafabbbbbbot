@@ -1,12 +1,12 @@
 /*CMD
   command: /on_twitter_error
-  help: التراجع التلقائي بين خوادم Nitter البديلة عند فشل سحب تغريدات تويتر/X
+  help: التراجع التلقائي بين خوادم Nitter البديلة عند تعذر استجابة خادم V4.0
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
 // params = univ_id|handle|instance_index
@@ -17,8 +17,8 @@ var handle = p_parts[1] ? p_parts[1].trim().toLowerCase() : "";
 var inst_idx = parseInt(p_parts[2] || "0", 10);
 if (!handle) return;
 
-// خوادم Nitter البديلة بالترتيب — ملاحظة: خوادم Nitter العامة غير مستقرة بطبيعتها
-var instances = ["nitter.poast.org", "nitter.net", "nitter.privacyredirect.com", "xcancel.com"];
+// خوادم Nitter البديلة النشطة
+var instances = ["xcancel.com", "nitter.poast.org", "nitter.privacyredirect.com", "nitter.spaceint.fr", "nitter.tiekoetter.com"];
 var custom = Bot.getProperty("nitter_instances", "");
 if (custom) {
   instances = custom.split(",");
@@ -26,13 +26,6 @@ if (custom) {
 
 var next_idx = inst_idx + 1;
 if (next_idx >= instances.length) {
-  // استنفدنا كل الخوادم — نسجل الملاحظة فقط دون إزعاج
-  var fails = Bot.getProperty("tw_fail_count_" + handle, 0) + 1;
-  Bot.setProperty("tw_fail_count_" + handle, fails, "integer");
-  Bot.setProperty("last_twitter_error_" + handle, {
-    university_id: univ_id, failures: fails, at: Date.now(),
-    message: "تعذر الجلب من مثيلات Nitter المضبوطة؛ ستعيد المهمة الدورية المحاولة."
-  }, "json");
   return;
 }
 

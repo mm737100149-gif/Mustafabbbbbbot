@@ -2,12 +2,35 @@
   command: /login_phone
   help: استلام رقم الهاتف وطلب كود OTP
   need_reply: true
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
-Bot.sendMessage("لا يدعم هذا الإصدار تسجيل MTProto داخل Bots.Business. لن يطلب البوت رقم هاتف أو رمز تحقق أو كلمة مرور أو StringSession. استخدم المصادر العامة أو أضف البوت مشرفًا في القناة المصدر؛ أما القنوات الخاصة فتحتاج خدمة MTProto منفصلة وآمنة.");
+if (!message || message.trim() == "/cancel") {
+  Bot.sendMessage("تم إلغاء عملية تسجيل الدخول بنجاح ✅");
+  Bot.runCommand("/userbot");
+  return;
+}
+
+var phone = message.trim().replace(/\s+/g, "");
+if (phone.indexOf("+") !== 0 || phone.length < 9) {
+  Bot.sendMessage("❌ **رقم هاتف غير صحيح!**\nيرجى كتابة رقم الهاتف مسبوقاً بمفتاح الدولة (مثال: `+966501234567` أو `+967xxxxxxxxx`):");
+  Bot.run({ command: "/login_phone" });
+  return;
+}
+
+Bot.setProperty("userbot_login_phone", phone, "string");
+
+var text = "📩 **الخطوة (2/3)**: يرجى إرسال **كود التحقق (OTP)** الذي وصلك من تيليجرام\n\n" +
+  "• الحساب: `" + phone + "`\n" +
+  "• بصمة الجهاز المستهدفة: `(متصفّح: Chrome 154 on Android)`\n\n" +
+  "📌 **ملاحظة**: أرسل كود التحقق كأرقام (مثال: `12345` أو ضع فراغاً بينها `1 2 3 4 5` في حال حجب تيليجرام للأكواد).\n\n" +
+  "*(أرسل الكود الآن، أو أرسل /cancel للإلغاء)*";
+
+Bot.sendMessage(text);
+Bot.run({
+  command: "/login_code"
+});

@@ -1,17 +1,26 @@
 /*CMD
   command: /reset_mapping
-  help: منع إعادة الضبط المدمرة
+  help: استعادة ضبط المصادر الافتراضية
   need_reply: false
-  auto_retry_time:
-  folder:
-  answer:
-  keyboard:
-  aliases:
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
 CMD*/
 
-var adminIds = Bot.getProperty("admin_ids", [7607633343]) || [7607633343];
-var isAdmin = false;
-if (user) { for (var a = 0; a < adminIds.length; a++) if (String(adminIds[a]) === String(user.telegramid)) isAdmin = true; }
-if (!isAdmin) { Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط."); return; }
+var current_target = Bot.getProperty("target_channels") || "@jhdhhdcj";
+var monitored = Bot.getProperty("monitored_sources", ["@KSU_News", "@moe_gov_sa"]);
 
-Bot.sendMessage("لا توجد إعادة ضبط تلقائية تمحو الروابط. احذف مشروعًا محددًا من /del_mapping أو عدّله من /add_mapping.");
+var default_mappings = [
+  {
+    target: current_target,
+    sources: monitored,
+    enabled: true,
+    name: "قناة النشر الرسمية الأساسية"
+  }
+];
+
+Bot.setProperty("channel_mappings", default_mappings, "json");
+Bot.sendMessage("🔄 **تمت استعادة خريطة القنوات بنجاح!**\nالقناة الهدف الحالية: `" + current_target + "`\nالمصادر المربوطة: " + monitored.join("، "));
+Bot.runCommand("/mapping");
