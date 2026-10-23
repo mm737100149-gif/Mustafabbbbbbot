@@ -1,0 +1,215 @@
+/*CMD
+  command: /on_crawl_success
+  help: معالج استلام المنشور وتنظيفه وفلترته أكاديمياً للجامعة المستهدفة حصراً
+  need_reply: false
+  auto_retry_time: 
+  folder: 
+  answer: 
+  keyboard: 
+  aliases: 
+CMD*/
+
+if (!content) return;
+
+// حماية الذاكرة - قراءة آخر 25000 بايت
+var work_content = content;
+if (work_content.length > 25000) {
+  work_content = work_content.substring(work_content.length - 25000);
+}
+
+// استخراج المعاملات: قد تكون بالصيغة univ_id|channel_name أو channel_name فقط
+var raw_params = (params || "").trim();
+var bound_univ_id = "";
+var channel_name = "";
+
+if (raw_params.indexOf("|") !== -1) {
+  var p_parts = raw_params.split("|");
+  bound_univ_id = p_parts[0].trim();
+  channel_name = p_parts[1].trim().toLowerCase();
+} else {
+  channel_name = raw_params.toLowerCase();
+}
+
+if (!channel_name) {
+  var match_ch = work_content.match(/<meta property="al:android:url" content="tg:\/\/resolve\?domain=([^"]+)"/i);
+  if (match_ch && match_ch[1]) {
+    channel_name = match_ch[1].toLowerCase();
+  }
+}
+if (!channel_name) return;
+
+// 1. استخراج كتلة أحدث منشور بسرعة فائقة بدون حلقات تكرار
+var last_post_marker = work_content.lastIndexOf('data-post="');
+if (last_post_marker === -1) return;
+
+var post_chunk = work_content.substring(last_post_marker, last_post_marker + 5000);
+var id_match = post_chunk.match(/data-post="[^"]*\/(\d+)"/);
+if (!id_match) return;
+
+var max_id = parseInt(id_match[1], 10);
+if (!max_id || max_id === 0) return;
+
+var last_seen_id = Bot.getProperty("last_crawl_id_" + channel_name, 0);
+if (!last_seen_id || last_seen_id === 0) {
+  last_seen_id = max_id - 1;
+}
+
+if (max_id <= last_seen_id) return;
+
+// 2. استخراج النص وتنظيفه المحكم دون تشويه المحتوى أو حذف الروابط والمعرفات
+var text_match = post_chunk.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+var raw_html_text = text_match ? text_match[1] : "";
+
+function deepCleanWebGarbage(html) {
+  if (!html) return "";
+  var s = html;
+  // تحويل فواصل الأسطر
+  s = s.replace(/<br\s*[\/]?>/gi, "\n");
+  // استخراج الروابط مع الحفاظ التام عليها
+  s = s.replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, function(match, link, anchor) {
+    if (!anchor || anchor.indexOf("http") === 0 || anchor === link) return "\n" + link + "\n";
+    return anchor + " (" + link + ")";
+  });
+  // حذف بقية وسوم html
+  s = s.replace(/<[^>]+>/g, " ");
+  // معالجة الكيانات
+  s = s.replace(/&amp;/g, "&");
+  s = s.replace(/&quot;/g, '"');
+  s = s.replace(/&#39;/g, "'");
+  s = s.replace(/&lt;/g, "<");
+  s = s.replace(/&gt;/g, ">");
+  s = s.replace(/&nbsp;/gi, " ");
+
+  // تنظيف بقايا تويتر في نهاية النص فقط دون تشويه المحتوى
+  s = s.replace(/\s+X\s*$/g, "");
+  s = s.replace(/\bX\s*$/g, "");
+
+  // تنظيف الأسطر مع الحفاظ على المحتوى الأكاديمي والروابط
+  var lines = s.split("\n");
+  var clean_lines = [];
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].trim();
+    if (!l || l === "•" || l === "-" || l === "*") continue;
+    clean_lines.push(l);
+  }
+  return clean_lines.join("\n").trim();
+}
+
+var extracted_text = deepCleanWebGarbage(raw_html_text);
+
+// استخراج الصورة الحقيقية
+function extractValidPhoto(chunk) {
+  if (!chunk) return null;
+  // تحديث Regex لاستيعاب التغييرات في كود تيليجرام ويب واستخراج الصور بدقة
+  var photoWrapMatch = chunk.match(/class="[^"]*tgme_widget_message_photo_wrap[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i) ||
+                   chunk.match(/class="[^"]*tgme_widget_message_photo[^"]*"[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/i);
+  
+  if (photoWrapMatch) {
+    var u = (photoWrapMatch[1]).trim();
+    if (u.indexOf("emoji") === -1 && u.indexOf("telegram.org/img") === -1) {
+      return u.indexOf("//") === 0 ? ("https:" + u) : u;
+    }
+  }
+  var cdnMatch = chunk.match(/background-image:\s*url\('(https?:\/\/[^']*(?:telesco\.pe|cdn|telegram|fbcdn)[^']*)'\)/i);
+  if (cdnMatch && cdnMatch[1] && cdnMatch[1].indexOf("emoji") === -1) {
+    return cdnMatch[1].trim();
+  }
+  return null;
+}
+
+
+var image_url = extractValidPhoto(post_chunk);
+
+// 🛡️ منع التكرار عبر البصمة الرقمية (Hash) بسيطة لتلائم Bot Business
+var post_hash = "h_" + (extracted_text.substring(0, 50) + (image_url || "")).length; 
+if (Bot.getProperty("seen_" + post_hash)) return;
+Bot.setProperty("seen_" + post_hash, true, "boolean");
+
+// حفظ معرف المنشور لمنع التكرار (الطريقة القديمة للمصادر)
+Bot.setProperty("last_crawl_id_" + channel_name, max_id, "integer");
+
+// إذا كان النص بعد التنظيف فارغاً أو تافهاً، نتجاهله فوراً
+if (!extracted_text || extracted_text.length < 20) {
+  return;
+}
+
+// 4. مطابقة الجامعة المستهدفة وقناة النشر المخصصة لها حصراً
+var univ_projects = Bot.getProperty("university_projects", []);
+var target_univ = null;
+
+// أولاً: البحث بالمعرف المربوط بالطلب
+if (bound_univ_id) {
+  for (var u1 = 0; u1 < univ_projects.length; u1++) {
+    if (univ_projects[u1].id === bound_univ_id) {
+      target_univ = univ_projects[u1];
+      break;
+    }
+  }
+}
+
+// ثانياً: البحث بقناة المصدر
+if (!target_univ) {
+  var clean_at_ch = "@" + channel_name;
+  for (var u2 = 0; u2 < univ_projects.length; u2++) {
+    var tg_list = univ_projects[u2].telegram_sources || [];
+    var tw_list = univ_projects[u2].twitter_sources || [];
+    var combined_list = tg_list.concat(tw_list);
+    for (var s = 0; s < combined_list.length; s++) {
+      var s_cl = combined_list[s].replace(/^@/, "").toLowerCase();
+      if (s_cl === channel_name) {
+        target_univ = univ_projects[u2];
+        break;
+      }
+    }
+    if (target_univ) break;
+  }
+}
+
+// إذا لم نجد جامعة، نأخذ الجامعة الأولى الافتراضية
+if (!target_univ && univ_projects.length > 0) {
+  target_univ = univ_projects[0];
+}
+if (!target_univ) return;
+
+var dest_target = target_univ.target_channel || "@jhdhhdcj";
+
+// 7. إرسال إلى الذكاء الاصطناعي مع تعليمات صارمة مخصصة للجامعة
+Bot.setProperty("pending_media_type", image_url ? "photo" : "text", "string");
+Bot.setProperty("pending_media_id", image_url || "", "string");
+Bot.setProperty("pending_raw_text", extracted_text, "string");
+Bot.setProperty("pending_targets", [dest_target], "json");
+Bot.setProperty("pending_target_univ", target_univ.name, "string");
+
+var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
+var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
+var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
+
+var system_prompt = "# الهوية: محرر أكاديمي وجامعي رسمي لطلاب: (" + target_univ.name + ").\n" +
+  "أنت لست بوت؛ أنت المشرف الرسمي الذي يكتب الأخبار للطلاب بأسلوبك الخاص.\n\n" +
+  "## القواعد الذهبية:\n" +
+  "1. ممنوع منعاً باتاً ذكر المصادر (مثل: وفقاً لـ، نقلاً عن، حساب تويتر، قناة تليجرام).\n" +
+  "2. التنسيق: ابدأ دائماً بـ 📌 مع عنوان قوي، ثم نقاط واضحة للمحتوى [•]، ثم روابط التقديم الرسمية 🔗، ثم هاشتاجات الجامعة.\n" +
+  "3. لا تغير المواعيد، التواريخ، أو الروابط الرسمية (روابط PowerApps، نماذج جوجل، بوابات الجامعات).\n" +
+  "4. إذا كان الخبر إعلاناً تجارياً لخدمات أخرى، استبعده فوراً بكلمة: [IGNORED].\n" +
+  "5. اللغة: عربية فصحى راقية ومباشرة.\n";
+
+HTTP.post({
+  url: base_url.replace(/\/+$/, "") + "/chat/completions",
+  headers: {
+    "Authorization": "Bearer " + api_key,
+    "Content-Type": "application/json"
+  },
+  body: {
+    model: current_model,
+    messages: [
+      { role: "system", content: system_prompt },
+      { role: "user", content: extracted_text }
+    ],
+    temperature: 0.3,
+    max_tokens: 600
+  },
+  success: "/on_ai_post_success",
+  error: "/on_ai_post_error",
+  background: true
+});
+
