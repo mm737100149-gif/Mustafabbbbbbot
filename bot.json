@@ -1,0 +1,258 @@
+{
+  "bb_sync_version": "1.0",
+  "name": "Academic_University_Publisher",
+  "git_remote": "https://github.com/mm737100149-gif/Bot.git",
+  "info": "نشر أكاديمي عربي بربط صريح، وطابور مستمر، ووسائط، ومنع تكرار، وفلترة إعلانات، وردود على التعليقات.",
+  "commands": [
+    {
+      "name": "/ad"
+    },
+    {
+      "name": "/add"
+    },
+    {
+      "name": "/add_mapping"
+    },
+    {
+      "name": "/add_source"
+    },
+    {
+      "name": "/add_univ_step2"
+    },
+    {
+      "name": "/add_univ_step3"
+    },
+    {
+      "name": "/add_univ_step4"
+    },
+    {
+      "name": "/add_univ_step5"
+    },
+    {
+      "name": "/add_university"
+    },
+    {
+      "name": "/ai"
+    },
+    {
+      "name": "/api_test"
+    },
+    {
+      "name": "/chat"
+    },
+    {
+      "name": "/check_session"
+    },
+    {
+      "name": "/comments"
+    },
+    {
+      "name": "/crawl_sources",
+      "auto_retry_time": 300
+    },
+    {
+      "name": "_default"
+    },
+    {
+      "name": "/del_mapping"
+    },
+    {
+      "name": "/del_source"
+    },
+    {
+      "name": "/del_university"
+    },
+    {
+      "name": "/flush_album"
+    },
+    {
+      "name": "/google_news"
+    },
+    {
+      "name": "/help"
+    },
+    {
+      "name": "/instructions"
+    },
+    {
+      "name": "/keys"
+    },
+    {
+      "name": "/login_2fa"
+    },
+    {
+      "name": "/login_code"
+    },
+    {
+      "name": "/login_phone"
+    },
+    {
+      "name": "/login_start"
+    },
+    {
+      "name": "/logout_session"
+    },
+    {
+      "name": "/mapping"
+    },
+    {
+      "name": "/new_post"
+    },
+    {
+      "name": "/on_ai_post_error"
+    },
+    {
+      "name": "/on_ai_post_success"
+    },
+    {
+      "name": "/on_api_test_error"
+    },
+    {
+      "name": "/on_api_test_success"
+    },
+    {
+      "name": "/on_chat_error"
+    },
+    {
+      "name": "/on_chat_success"
+    },
+    {
+      "name": "/on_comment_ai_error"
+    },
+    {
+      "name": "/on_comment_ai_success"
+    },
+    {
+      "name": "/on_crawl_error"
+    },
+    {
+      "name": "/on_crawl_success"
+    },
+    {
+      "name": "/on_google_news_success"
+    },
+    {
+      "name": "/on_publish_error"
+    },
+    {
+      "name": "/on_publish_result"
+    },
+    {
+      "name": "/on_test_error"
+    },
+    {
+      "name": "/on_test_success"
+    },
+    {
+      "name": "/on_twitter_error"
+    },
+    {
+      "name": "/on_twitter_success"
+    },
+    {
+      "name": "/pause"
+    },
+    {
+      "name": "/process_publish_job"
+    },
+    {
+      "name": "/prompt_session"
+    },
+    {
+      "name": "/publish_chat_post"
+    },
+    {
+      "name": "/publish_next"
+    },
+    {
+      "name": "/receive_chat"
+    },
+    {
+      "name": "/receive_new_post"
+    },
+    {
+      "name": "/reset_mapping"
+    },
+    {
+      "name": "/select_direct_project"
+    },
+    {
+      "name": "/session_help"
+    },
+    {
+      "name": "/set_ad"
+    },
+    {
+      "name": "/set_api_key"
+    },
+    {
+      "name": "/set_base_url"
+    },
+    {
+      "name": "/set_channel"
+    },
+    {
+      "name": "/set_instruction"
+    },
+    {
+      "name": "/set_model"
+    },
+    {
+      "name": "/set_nitter"
+    },
+    {
+      "name": "/set_session"
+    },
+    {
+      "name": "/set_source_profile"
+    },
+    {
+      "name": "/social"
+    },
+    {
+      "name": "/sources"
+    },
+    {
+      "name": "/start"
+    },
+    {
+      "name": "/status"
+    },
+    {
+      "name": "/submit_post"
+    },
+    {
+      "name": "/support"
+    },
+    {
+      "name": "/test"
+    },
+    {
+      "name": "/toggle_ai"
+    },
+    {
+      "name": "/univ_crawl"
+    },
+    {
+      "name": "/univ_post"
+    },
+    {
+      "name": "/univ_toggle"
+    },
+    {
+      "name": "/univ_view"
+    },
+    {
+      "name": "/universities"
+    },
+    {
+      "name": "/userbot"
+    },
+    {
+      "name": "/users"
+    },
+    {
+      "name": "handle_user_post"
+    }
+  ]
+}

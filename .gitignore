@@ -1,0 +1,14 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+# Runtime state
+*.db
+*.sqlite*
+*.session
+__pycache__/
+*.pyc
+node_modules/
+dist/
+logs/
+.DS_Store

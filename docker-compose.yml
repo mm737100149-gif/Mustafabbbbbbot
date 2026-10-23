@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  publisher_bot:
+    build: .
+    container_name: booooot_adman_publisher
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_ID=${ADMIN_ID}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-}
+      - TARGET_CHANNEL=${TARGET_CHANNEL:-}
+      - AI_BASE_URL=${AI_BASE_URL:-https://api.openai.com/v1}
+      - AI_API_KEY=${AI_API_KEY}
+      - PRIMARY_MODEL=${PRIMARY_MODEL:-gpt-4o-mini}
+      - FALLBACK_MODEL=${FALLBACK_MODEL:-gpt-4o-mini}
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH}
+      - STRING_SESSION=${STRING_SESSION:-}
+      - PORT=8088
+    volumes:
+      - bot_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  bot_data:
+    driver: local
