@@ -2,12 +2,15 @@
   command: /set_nitter
   help: ضبط خادم Nitter المستقر لسحب تغريدات تويتر/X (مثال: nitter.poast.org أو خادمك الخاص)
   need_reply: true
-  auto_retry_time: 
-  folder: 
+  auto_retry_time:
+  folder:
   answer: 🐦 **ضبط خادم Nitter لسحب تويتر/X**:\n\nأرسل اسم الخادم فقط بدون https (مثال: `nitter.poast.org`)\nأو أرسل عدة خوادم مفصولة بفاصلة للتراجع التلقائي.\n\n*(أرسل /cancel للإلغاء)*
-  keyboard: 
-  aliases: 
+  keyboard:
+  aliases:
 CMD*/
+
+var adminIds=Bot.getProperty("admin_ids",[7607633343])||[7607633343],isAdmin=false;if(user){for(var a=0;a<adminIds.length;a++)if(String(adminIds[a])===String(user.telegramid))isAdmin=true;}if(!isAdmin){Bot.sendMessage("هذا الأمر مخصص للمشرف المعتمد فقط.");return;}
+
 
 if (!message || message.trim() == "/cancel") {
   Bot.sendMessage("تم الإلغاء ✅");

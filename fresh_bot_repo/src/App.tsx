@@ -39,7 +39,7 @@ const STORAGE_KEY_CONFIG = 'tg_educational_config_v2';
 const STORAGE_KEY_SOURCES = 'tg_educational_sources_v2';
 
 const DEFAULT_CONFIG: BotConfig = {
-  botToken: '8901693218:AAEOQmHMZLy-xaPbTUMq1KGhDwp1l0wFWP4',
+  botToken: '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg',
   adminId: '7607633343',
   adminUsername: '@M_S_F_G',
   additionalAdminIds: [],
@@ -214,7 +214,7 @@ export default function App() {
   const [isTestingBot, setIsTestingBot] = useState(false);
   const [isSavingSources, setIsSavingSources] = useState(false);
   const [botInfo, setBotInfo] = useState<BotInfo | null>({
-    id: 8901693218,
+    id: 8755301393,
     is_bot: true,
     first_name: 'ADMIN_p',
     username: 'admiuin_bot',

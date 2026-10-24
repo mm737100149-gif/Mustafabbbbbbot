@@ -142,7 +142,7 @@ app.post('/api/state', (req: Request, res: Response) => {
 
 // 5. Test Telegram Bot Token
 app.post('/api/telegram/test-bot', async (req: Request, res: Response) => {
-  const token = req.body.token || "8901693218:AAEOQmHMZLy-xaPbTUMq1KGhDwp1l0wFWP4";
+  const token = req.body.token || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
   try {
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
     const data = await tgRes.json();
@@ -346,7 +346,7 @@ app.post('/api/university/post', async (req: Request, res: Response) => {
       res.status(400).json({ error: "قناة النشر ومحتوى الرسالة مطلوبان" });
       return;
     }
-    const token = process.env.TELEGRAM_BOT_TOKEN || "8901693218:AAEOQmHMZLy-xaPbTUMq1KGhDwp1l0wFWP4";
+    const token = process.env.TELEGRAM_BOT_TOKEN || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -142,3 +142,6 @@ var kb = [
 ];
 
 Bot.sendInlineKeyboard(kb, status_msg);
+
+// إعادة جدولة الفحص التلقائي القادم بعد 180 ثانية (3 دقائق) لضمان العمل المستمر 24/7 دون أي توقف
+Bot.run({ command: "/crawl_sources", run_after: 180 });

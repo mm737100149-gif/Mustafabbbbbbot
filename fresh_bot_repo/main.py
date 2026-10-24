@@ -69,11 +69,9 @@ def safe_int(val: Any, default: int = 0) -> int:
 
 # ----------------- الإعدادات والاعتمادات والتحقق الذاتي -----------------
 # 🚨 أمان: لا توجد أي مفاتيح مكتوبة داخل الكود. كل الاعتمادات تُقرأ من متغيرات البيئة فقط.
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-if not BOT_TOKEN:
-    raise SystemExit("⛔ متغير البيئة BOT_TOKEN غير معرّف! ضعه في ملف .env أو في إعدادات الاستضافة.")
-ADMIN_ID = safe_int(os.getenv("ADMIN_ID", ""), 0)
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").replace("@", "").strip()
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg").strip()
+ADMIN_ID = safe_int(os.getenv("ADMIN_ID", "7607633343"), 7607633343)
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "M_S_F_G").replace("@", "").strip()
 
 # استرداد آمن ومعالجة الخلط المحتمل بين API_ID و STRING_SESSION
 _raw_api_id = os.getenv("TELEGRAM_API_ID", "").strip()

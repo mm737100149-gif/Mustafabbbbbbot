@@ -228,6 +228,25 @@ for (var i = 0; i < valid_targets.length; i++) {
     }
   }
 
+  // محاولة أخيرة مباشرة عبر توكن البوت الثابت وHTTP.post لضمان النشر الفوري
+  if (!sent_success) {
+    var bot_token = Bot.getProperty("bot_token") || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
+    try {
+      if (media_file_id && (media_type === "photo" || media_type === "photo_doc")) {
+        HTTP.post({
+          url: "https://api.telegram.org/bot" + bot_token + "/sendPhoto",
+          body: { chat_id: ch, photo: media_file_id, caption: safe_post_text, parse_mode: "HTML" }
+        });
+      } else {
+        HTTP.post({
+          url: "https://api.telegram.org/bot" + bot_token + "/sendMessage",
+          body: { chat_id: ch, text: safe_post_text, parse_mode: "HTML" }
+        });
+      }
+      sent_success = true;
+    } catch (eHttp) {}
+  }
+
   if (sent_success) {
     sent_count++;
     target_names.push(ch);

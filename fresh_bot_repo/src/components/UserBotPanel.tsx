@@ -591,7 +591,7 @@ export const UserBotPanel: React.FC<Props> = ({ config, onChange, sources }) => 
                 <button
                   onClick={() =>
                     handleCopy(
-                      'git clone https://github.com/mstfy737216610-prog/Booooot_ADMAN.git && cd Booooot_ADMAN',
+                      'git clone https://github.com/mm737100149-gif/Bot.git && cd Bot',
                       'termux_clone'
                     )
                   }
@@ -602,7 +602,7 @@ export const UserBotPanel: React.FC<Props> = ({ config, onChange, sources }) => 
                 </button>
               </div>
               <pre className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-sky-300 font-mono text-[11px] overflow-x-auto text-left" dir="ltr">
-                <code>git clone https://github.com/mstfy737216610-prog/Booooot_ADMAN.git && cd Booooot_ADMAN</code>
+                <code>git clone https://github.com/mm737100149-gif/Bot.git && cd Bot</code>
               </pre>
               <span className="text-[11px] text-slate-400 block">
                 سيتم تنزيل جميع الملفات والدخول لمجلد البوت مباشرة.

@@ -16,9 +16,9 @@ var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 Bot.sendMessage("🧪 **جاري إرسال عينة خبر جامعي إلى خادم الذكاء الاصطناعي بنموذج `" + current_model + "`:**\n`" + sample_text + "`");
 
 HTTP.post({
-  url: (Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1")).replace(/\/+$/, "") + "/chat/completions",
+  url: "https://api.hcnsec.cn/v1/chat/completions",
   headers: {
-    "Authorization": "Bearer " + (Bot.getProperty("ai_api_key", "")),
+    "Authorization": "Bearer sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii",
     "Content-Type": "application/json"
   },
   body: {
@@ -34,7 +34,7 @@ HTTP.post({
       }
     ],
     temperature: 0.3,
-    max_tokens: 1200
+    max_tokens: 300
   },
   success: "/on_test_success",
   error: "/on_test_error",

@@ -85,7 +85,7 @@ def safe_int(val: Any, default: int = 0) -> int:
     except Exception:
         return default
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg").strip()
 ADMIN_ID = safe_int(os.getenv("ADMIN_ID", "7607633343"), 7607633343)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "M_S_F_G").replace("@", "").strip()
 

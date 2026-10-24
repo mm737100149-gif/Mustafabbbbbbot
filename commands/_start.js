@@ -12,7 +12,11 @@ CMD*/
 var ADMIN_ID = 7607633343;
 var ADMIN_USER = "M_S_F_G";
 
-// تهيئة الإعدادات الافتراضية التلقائية لضمان عمل البوت فوراً دون توقف
+// تهيئة الإعدادات الافتراضية التلقائية وتثبيت التوكن ومستودع Git
+Bot.setProperty("bot_token", "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg", "string");
+Bot.setProperty("bot_username", "Hhhgggggogddf_bot", "string");
+Bot.setProperty("git_remote", "https://github.com/mm737100149-gif/Bot.git", "string");
+
 if (!Bot.getProperty("ai_api_key")) {
   Bot.setProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii", "string");
 }
@@ -25,6 +29,9 @@ if (!Bot.getProperty("ai_model")) {
 if (!Bot.getProperty("target_channels")) {
   Bot.setProperty("target_channels", "@jhdhhdcj", "string");
 }
+
+// تفعيل مجدول النشر والفحص التلقائي الخلفي 24/7 كل 3 دقائق
+Bot.run({ command: "/crawl_sources", run_after: 20 });
 
 var is_paused = Bot.getProperty("bot_paused", false);
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4.1-Flash");

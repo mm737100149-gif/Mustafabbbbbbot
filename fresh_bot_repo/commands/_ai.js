@@ -11,7 +11,7 @@ CMD*/
 
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
-var api_key = Bot.getProperty("ai_api_key", "");
+var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
 var ai_enabled = Bot.getProperty("ai_enabled", true);
 
 var masked_key = api_key.substring(0, 8) + "..." + api_key.substring(api_key.length - 4);

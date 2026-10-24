@@ -54,7 +54,7 @@ test('Arabic text normalization handles diacritics and Alef variations', () => {
 });
 
 test('Validates User Bot Token strictly', () => {
-  const userToken = '8901693218:AAEOQmHMZLy-xaPbTUMq1KGhDwp1l0wFWP4';
+  const userToken = '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg';
   assert.equal(validateBotToken(userToken).valid, true);
 
   const invalidToken = '1234:short';

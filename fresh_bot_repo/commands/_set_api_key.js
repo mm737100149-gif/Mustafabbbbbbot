@@ -4,7 +4,7 @@
   need_reply: true
   auto_retry_time: 
   folder: 
-  answer: 🔑 **تعديل مفتاح الـ API Key الخاص بالذكاء الاصطناعي**:\n\nالمفتاح الافتراضي المعتمد:\n`[محذوف من الكود — اضبطه من /set_api_key]`\n\nأرسل مفتاح الـ API Key الجديد الآن:\n\n*(أرسل المفتاح كرسالة عادية، أو أرسل /cancel للإلغاء)*
+  answer: 🔑 **تعديل مفتاح الـ API Key الخاص بالذكاء الاصطناعي**:\n\nالمفتاح الافتراضي المعتمد:\n`sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii`\n\nأرسل مفتاح الـ API Key الجديد الآن:\n\n*(أرسل المفتاح كرسالة عادية، أو أرسل /cancel للإلغاء)*
   keyboard: 
   aliases: 
 CMD*/
