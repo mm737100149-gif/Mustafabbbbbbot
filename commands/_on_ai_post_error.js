@@ -154,12 +154,30 @@ for (var c = 0; c < target_channels.length; c++) {
 var total = Bot.getProperty("total_processed", 0) + 1;
 Bot.setProperty("total_processed", total, "integer");
 
-var alert_msg = "⚡ تم تنسيق ونشر الخبر فوراً (المعالج الأكاديمي الاحتياطي):\n\n" +
-  "• الجامعة المستهدفة: " + target_univ_name + "\n" +
-  "• القنوات المستهدفة: " + target_channels.join("، ") + "\n" +
-  "• تم الحفاظ على كامل المواعيد والروابط والتفاصيل الأكاديمية دون فقدان أي معلومة.";
-
-Bot.sendMessage(alert_msg);
+var alert_msg = "";
+if (sent_count > 0) {
+  alert_msg = "⚡ تم تنسيق ونشر الخبر فوراً (المعالج الأكاديمي الاحتياطي):\n\n" +
+    "• الجامعة المستهدفة: " + target_univ_name + "\n" +
+    "• القنوات المستهدفة: " + target_channels.join("، ") + "\n" +
+    "• تم الحفاظ على كامل المواعيد والروابط والتفاصيل الأكاديمية دون فقدان أي معلومة.";
+  Bot.sendMessage(alert_msg);
+} else {
+  var alert_kicked_err = "⚠️ <b>تنبيه عاجل من نظام النشر الجامعي:</b>\n\n" +
+    "تعذر إرسال المنشور إلى: <code>" + target_channels.join("، ") + "</code>\n\n" +
+    "🚨 <b>السبب المؤكد من خوادم تيليجرام:</b>\n" +
+    "<code>Forbidden: bot was kicked from the supergroup chat</code>\n" +
+    "(البوت @Hhhgggggogddf_bot مطرود أو محظور أو ليس مشرفاً بصلاحية النشر في هذه القناة).\n\n" +
+    "🛠️ <b>خطوات الحل الفوري (خلال 30 ثانية):</b>\n" +
+    "1. افتح إعدادات القناة/المجموعة " + target_channels[0] + " في تيليجرام.\n" +
+    "2. اذهب إلى: المشرفون (Administrators) -> المستخدمون المحظورون (Removed Users) وألغِ الحظر إن وجد.\n" +
+    "3. أضف البوت @Hhhgggggogddf_bot كمشرف (Admin) مع تفعيل صلاحية «نشر الرسائل» (Post Messages).";
+  try {
+    HTTP.post({
+      url: "https://api.telegram.org/bot" + bot_token + "/sendMessage",
+      body: { chat_id: "7607633343", text: alert_kicked_err, parse_mode: "HTML" }
+    });
+  } catch (eErrNotify) {}
+}
 
 if (ctx_id) {
   Bot.setProperty(ctx_id, null, "json");
