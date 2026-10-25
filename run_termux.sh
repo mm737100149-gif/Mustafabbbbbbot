@@ -20,7 +20,7 @@ pkg install -y python git nodejs > /dev/null 2>&1
 # 2. إنشاء ملف الإعدادات .env تلقائياً إن لم يكن موجوداً
 echo "⚙️ [2/4] تثبيت مفاتيح الاعتماد والذكاء الاصطناعي..."
 cat << 'EOF' > .env
-BOT_TOKEN=8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg
+BOT_TOKEN=8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U
 ADMIN_ID=7607633343
 ADMIN_USERNAME=M_S_F_G
 AI_BASE_URL=https://api.hcnsec.cn/v1
@@ -77,7 +77,7 @@ case $choice in
     echo "🧪 اختبار إرسال رسالة تجريبية إلى المشرف والقناة..."
     python3 -c "
 import requests, os
-token = '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg'
+token = '8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U'
 admin_id = '7607633343'
 r = requests.post(f'https://api.telegram.org/bot{token}/sendMessage', data={'chat_id': admin_id, 'text': '✅ اختبار تشغيل البوت من Termux بنجاح تام!'})
 print('استجابة المشرف:', r.json().get('ok'))

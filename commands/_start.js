@@ -13,8 +13,8 @@ var ADMIN_ID = 7607633343;
 var ADMIN_USER = "M_S_F_G";
 
 // تهيئة الإعدادات الافتراضية التلقائية وتثبيت التوكن ومستودع Git
-Bot.setProperty("bot_token", "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg", "string");
-Bot.setProperty("bot_username", "Hhhgggggogddf_bot", "string");
+Bot.setProperty("bot_token", "8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U", "string");
+Bot.setProperty("bot_username", "Jsjsjjjnxnbot", "string");
 Bot.setProperty("git_remote", "https://github.com/mm737100149-gif/Bot.git", "string");
 
 if (!Bot.getProperty("ai_api_key")) {

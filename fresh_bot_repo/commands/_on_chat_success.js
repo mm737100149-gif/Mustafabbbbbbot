@@ -41,6 +41,19 @@ if (!ai_reply) {
 
 ai_reply = cleanArabicText(ai_reply);
 
+if (typeof User !== "undefined" && User.getProperty && User.setProperty) {
+  var user_q = User.getProperty("pending_chat_query", "") || Bot.getProperty("last_user_query", "");
+  var hist = User.getProperty("chat_history", []) || [];
+  if (!Array.isArray(hist)) hist = [];
+  if (user_q) {
+    hist.push({ role: "user", content: user_q });
+    hist.push({ role: "assistant", content: ai_reply });
+    if (hist.length > 20) hist = hist.slice(hist.length - 20);
+    User.setProperty("chat_history", hist, "json");
+    User.setProperty("pending_chat_query", "", "string");
+  }
+}
+
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 Bot.setProperty("pending_chat_reply", ai_reply, "string");
 

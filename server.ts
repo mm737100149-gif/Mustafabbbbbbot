@@ -146,9 +146,60 @@ app.post('/api/state', (req: Request, res: Response) => {
   }
 });
 
+function getActiveBotToken(): string {
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN.trim()) return process.env.TELEGRAM_BOT_TOKEN.trim();
+  if (process.env.BOT_TOKEN && process.env.BOT_TOKEN.trim()) return process.env.BOT_TOKEN.trim();
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      if (state.bot_token && typeof state.bot_token === 'string' && state.bot_token.trim()) {
+        return state.bot_token.trim();
+      }
+    }
+  } catch {}
+  try {
+    const botJsonPath = path.join(__dirname, 'bot.json');
+    if (fs.existsSync(botJsonPath)) {
+      const bj = JSON.parse(fs.readFileSync(botJsonPath, 'utf-8'));
+      if (bj.bot_token && typeof bj.bot_token === 'string' && bj.bot_token.trim()) {
+        return bj.bot_token.trim();
+      }
+    }
+  } catch {}
+  return '8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U';
+}
+
+const OFFICIAL_BOT_COMMANDS = [
+  { command: "start", description: "🎛 اللوحة الرئيسية والقائمة الشاملة" },
+  { command: "chat", description: "💬 محادثة وتعليم الذكاء الاصطناعي الأكاديمي" },
+  { command: "crawl", description: "🔄 فحص وسحب الأخبار فوراً من المصادر" },
+  { command: "universities", description: "🏛️ إدارة الجامعات وقنوات النشر" },
+  { command: "new_post", description: "📝 صياغة ونشر خبر جامعي فوري" },
+  { command: "google_news", description: "🌐 بحث أخبار جوجل للجامعة" },
+  { command: "ad", description: "🎯 إعلان خدماتي الأكاديمية البديل" },
+  { command: "ai", description: "⚙️ إعدادات ونموذج الذكاء الاصطناعي" },
+  { command: "status", description: "📊 تقرير وحالة النظام والنشر" },
+  { command: "keys", description: "🔑 المفاتيح والاعتمادات ومستودع Git" },
+  { command: "support", description: "📞 التواصل المباشر مع المشرف" }
+];
+
+async function syncTelegramCommands(token: string): Promise<boolean> {
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commands: OFFICIAL_BOT_COMMANDS })
+    });
+    const d = await tgRes.json();
+    return !!d.ok;
+  } catch {
+    return false;
+  }
+}
+
 // 5. Test Telegram Bot Token
 app.post('/api/telegram/test-bot', async (req: Request, res: Response) => {
-  const token = req.body.token;
+  const token = req.body.token || getActiveBotToken();
   try {
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
     const data = await tgRes.json();
@@ -156,6 +207,225 @@ app.post('/api/telegram/test-bot', async (req: Request, res: Response) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(500).json({ ok: false, description: message });
+  }
+});
+
+// 5.01 Get Current Active Credentials
+app.get('/api/credentials/current', (_req: Request, res: Response) => {
+  try {
+    let state: any = {};
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+    }
+    const token = state.bot_token || getActiveBotToken();
+    res.json({
+      success: true,
+      token,
+      adminId: state.admin_id || '7607633343',
+      adminUsername: state.admin_user || '@M_S_F_G',
+      botUsername: state.bot_username || 'Jsjsjjjnxnbot',
+      botId: state.bot_id || '8812285802',
+      lastSync: state.last_token_sync || null
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// 5.02 Direct Save & Synchronize Bot Token to Server, Telegram & Termux
+app.post('/api/credentials/sync-token', async (req: Request, res: Response) => {
+  try {
+    const { token, adminId, adminUsername } = req.body;
+    const cleanToken = (token || '').trim();
+    if (!cleanToken) {
+      res.status(400).json({ success: false, error: "توكن البوت مطلوب." });
+      return;
+    }
+
+    // 1. التحقق المباشر من التوكن مع تيليجرام
+    const tgRes = await fetch(`https://api.telegram.org/bot${cleanToken}/getMe`);
+    const tgData = await tgRes.json();
+    if (!tgData.ok || !tgData.result) {
+      res.status(400).json({
+        success: false,
+        error: tgData.description || "التوكن غير صالح؛ رفضت خوادم تيليجرام الاتصال به."
+      });
+      return;
+    }
+
+    const bot = tgData.result;
+
+    // 2. مزامنة أوامر البوت الـ 11 فوراً
+    await syncTelegramCommands(cleanToken);
+
+    // 3. تحديث وحفظ التوكن في state.json
+    let stateData: any = {};
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        stateData = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      }
+    } catch {}
+    stateData.bot_token = cleanToken;
+    stateData.bot_username = bot.username || 'Jsjsjjjnxnbot';
+    stateData.bot_id = String(bot.id);
+    if (adminId) stateData.admin_id = String(adminId).trim();
+    if (adminUsername) stateData.admin_user = String(adminUsername).trim();
+    stateData.last_token_sync = new Date().toISOString();
+    fs.writeFileSync(STATE_FILE, JSON.stringify(stateData, null, 2), 'utf-8');
+
+    // 4. تحديث bot.json
+    try {
+      const botJsonPath = path.join(__dirname, 'bot.json');
+      if (fs.existsSync(botJsonPath)) {
+        const bj = JSON.parse(fs.readFileSync(botJsonPath, 'utf-8'));
+        bj.bot_token = cleanToken;
+        fs.writeFileSync(botJsonPath, JSON.stringify(bj, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      console.warn("Could not sync bot.json", e);
+    }
+
+    // 5. تحديث متغيرات البيئة الحية وملف .env
+    process.env.TELEGRAM_BOT_TOKEN = cleanToken;
+    process.env.BOT_TOKEN = cleanToken;
+    try {
+      const envPath = path.join(__dirname, '.env');
+      let envContent = '';
+      if (fs.existsSync(envPath)) {
+        envContent = fs.readFileSync(envPath, 'utf-8');
+        if (envContent.includes('BOT_TOKEN=')) {
+          envContent = envContent.replace(/BOT_TOKEN=.*$/m, `BOT_TOKEN=${cleanToken}`);
+        } else {
+          envContent += `\nBOT_TOKEN=${cleanToken}`;
+        }
+        if (envContent.includes('TELEGRAM_BOT_TOKEN=')) {
+          envContent = envContent.replace(/TELEGRAM_BOT_TOKEN=.*$/m, `TELEGRAM_BOT_TOKEN=${cleanToken}`);
+        } else {
+          envContent += `\nTELEGRAM_BOT_TOKEN=${cleanToken}`;
+        }
+      } else {
+        envContent = `BOT_TOKEN=${cleanToken}\nTELEGRAM_BOT_TOKEN=${cleanToken}\nADMIN_ID=${adminId || '7607633343'}\nADMIN_USERNAME=${adminUsername || 'M_S_F_G'}\n`;
+      }
+      fs.writeFileSync(envPath, envContent, 'utf-8');
+    } catch (e) {
+      console.warn("Could not sync .env", e);
+    }
+
+    // 6. تحديث سكريبت Termux run_termux.sh تلقائياً
+    try {
+      const termuxPath = path.join(__dirname, 'run_termux.sh');
+      if (fs.existsSync(termuxPath)) {
+        let tContent = fs.readFileSync(termuxPath, 'utf-8');
+        tContent = tContent.replace(/BOT_TOKEN=[^\s\n]+/g, `BOT_TOKEN=${cleanToken}`);
+        tContent = tContent.replace(/token = '[^']+'/g, `token = '${cleanToken}'`);
+        fs.writeFileSync(termuxPath, tContent, 'utf-8');
+      }
+    } catch (e) {
+      console.warn("Could not sync run_termux.sh", e);
+    }
+
+    res.json({
+      success: true,
+      bot: {
+        id: bot.id,
+        username: bot.username,
+        first_name: bot.first_name
+      },
+      message: `تم التحقق بنجاح من البوت @${bot.username}، وحفظ التوكن ومزامنته مع تيليجرام وترميكس!`
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// 5.03 Continuous AI Learning Memory Bank Endpoints
+app.get('/api/ai/memory', (_req: Request, res: Response) => {
+  try {
+    let state: any = {};
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+    }
+    const rules = Array.isArray(state.learned_rules) ? state.learned_rules : [];
+    const instructions = Array.isArray(state.learned_instructions) ? state.learned_instructions : [];
+    res.json({
+      success: true,
+      rules,
+      instructions
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message, rules: [], instructions: [] });
+  }
+});
+
+app.post('/api/ai/memory/add', (req: Request, res: Response) => {
+  try {
+    const { type = 'rule', title, content } = req.body;
+    if (!content || !content.trim()) {
+      res.status(400).json({ error: "محتوى القاعدة أو القالب مطلوب." });
+      return;
+    }
+    let state: any = {};
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+    }
+    if (!Array.isArray(state.learned_rules)) state.learned_rules = [];
+    if (!Array.isArray(state.learned_instructions)) state.learned_instructions = [];
+
+    const newRule = {
+      id: `rule_${Date.now()}`,
+      type, // 'template' | 'rule' | 'correction'
+      title: (title || (type === 'template' ? 'قالب صيغة معتمد' : type === 'correction' ? 'تصحيح خطأ سابق' : 'قاعدة صياغة مستفادة')).trim(),
+      content: content.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    state.learned_rules.unshift(newRule);
+    if (!state.learned_instructions.includes(content.trim())) {
+      state.learned_instructions.unshift(content.trim());
+    }
+
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+    res.json({ success: true, rule: newRule, totalRules: state.learned_rules.length });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post('/api/ai/memory/delete', (req: Request, res: Response) => {
+  try {
+    const { id } = req.body;
+    let state: any = {};
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+    }
+    if (Array.isArray(state.learned_rules)) {
+      state.learned_rules = state.learned_rules.filter((r: any) => r.id !== id);
+    }
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+    res.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post('/api/ai/memory/clear', (_req: Request, res: Response) => {
+  try {
+    let state: any = {};
+    if (fs.existsSync(STATE_FILE)) {
+      state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+    }
+    state.learned_rules = [];
+    state.learned_instructions = [];
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+    res.json({ success: true, message: "تم مسح بنك الذاكرة بنجاح." });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -316,8 +586,8 @@ app.post('/api/university/post', async (req: Request, res: Response) => {
       res.status(400).json({ error: "قناة النشر ومحتوى الرسالة مطلوبان" });
       return;
     }
-    const token = process.env.TELEGRAM_BOT_TOKEN || '';
-    if (!token) { res.status(503).json({ error: 'TELEGRAM_BOT_TOKEN غير مضبوط.' }); return; }
+    const token = getActiveBotToken();
+    if (!token) { res.status(503).json({ error: 'توكن البوت غير مضبوط.' }); return; }
     const projects = JSON.parse(fs.readFileSync(SOURCES_FILE, 'utf-8')).university_projects || [];
     if (!projects.some((p: any) => p.enabled !== false && p.target_channel === target_channel)) {
       res.status(403).json({ error: 'الوجهة غير مرتبطة بمشروع مفعّل.' }); return;
@@ -343,41 +613,137 @@ app.post('/api/university/post', async (req: Request, res: Response) => {
   }
 });
 
-// 5.6 Interactive AI Chat Endpoint
+// 5.6 Interactive AI Chat & Continuous Learning Endpoint
 app.post('/api/ai/chat', async (req: Request, res: Response) => {
   try {
-    const { message, model = 'DeepSeek-V4.1-Flash', customPrompt } = req.body;
+    const { message, model = 'DeepSeek-V4.1-Flash', customPrompt, conversationHistory = [] } = req.body;
     if (!message || !message.trim()) {
       res.status(400).json({ error: "الرسالة أو السؤال مطلوب." });
       return;
     }
+    const cleanUserMsg = message.trim();
+
+    // 1. استكشاف هل المشرف يقدم قالباً أو قاعدة أو تصحيحاً لخطأ سابق
+    let learnedRuleAdded: string | null = null;
+    let detectedType: 'template' | 'rule' | 'correction' | null = null;
+    let detectedContent = '';
+
+    if (cleanUserMsg.startsWith('تعلم:') || cleanUserMsg.startsWith('تعلم ')) {
+      detectedType = 'rule';
+      detectedContent = cleanUserMsg.replace(/^تعلم:?\s*/, '').trim();
+    } else if (cleanUserMsg.startsWith('اعتمد:') || cleanUserMsg.startsWith('اعتمد الصيغة:') || cleanUserMsg.startsWith('اعتمد القالب:') || cleanUserMsg.startsWith('اعتمد هذه الصيغة:')) {
+      detectedType = 'template';
+      detectedContent = cleanUserMsg.replace(/^اعتمد.*?:?\s*/, '').trim();
+    } else if (cleanUserMsg.startsWith('احفظ هذا القالب:') || cleanUserMsg.startsWith('احفظ هذه الصيغة:')) {
+      detectedType = 'template';
+      detectedContent = cleanUserMsg.replace(/^احفظ.*?:?\s*/, '').trim();
+    } else if (cleanUserMsg.startsWith('عدل الخطأ:') || cleanUserMsg.startsWith('صحح خطأ:') || cleanUserMsg.startsWith('تجنب خطأ:')) {
+      detectedType = 'correction';
+      detectedContent = cleanUserMsg.replace(/^(عدل|صحح|تجنب)\s*(الخطأ|خطأ)?:?\s*/, '').trim();
+    } else if (cleanUserMsg.includes('الصيغة المعتمدة هي') || cleanUserMsg.includes('قالب المنشورات:') || cleanUserMsg.includes('أريدك أن تنشر بهذه الصيغة')) {
+      detectedType = 'template';
+      detectedContent = cleanUserMsg;
+    }
+
+    // حفظ القاعدة المكتسبة فوراً في state.json لضمان استمرار التعلم
+    let stateData: any = {};
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        stateData = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+      }
+    } catch {}
+
+    if (!Array.isArray(stateData.learned_rules)) stateData.learned_rules = [];
+    if (!Array.isArray(stateData.learned_instructions)) stateData.learned_instructions = [];
+
+    if (detectedType && detectedContent.length > 5) {
+      const newRuleItem = {
+        id: `rule_${Date.now()}`,
+        type: detectedType,
+        title: detectedType === 'template' ? 'قالب صيغة معتمد من المشرف' : detectedType === 'correction' ? 'تصحيح وتعديل خطأ سابق' : 'قاعدة صياغة مستفادة',
+        content: detectedContent,
+        createdAt: new Date().toISOString()
+      };
+      stateData.learned_rules.unshift(newRuleItem);
+      if (!stateData.learned_instructions.includes(detectedContent)) {
+        stateData.learned_instructions.unshift(detectedContent);
+      }
+      fs.writeFileSync(STATE_FILE, JSON.stringify(stateData, null, 2), 'utf-8');
+      learnedRuleAdded = newRuleItem.title;
+    }
+
+    // 2. تجميع وتضمين بنك الذاكرة والقواعد المستفادة في البرومبت الموجه
+    const rulesList = stateData.learned_rules || [];
+    let memoryBlock = '';
+    if (rulesList.length > 0) {
+      memoryBlock = `\n\n## 🧠 بنك الذاكرة وقواعد التعلم المكتسبة من المشرف (@M_S_F_G):\n` +
+        rulesList.map((r: any, idx: number) => {
+          const badge = r.type === 'template' ? '📐 [قالب معتمد]' : r.type === 'correction' ? '⚠️ [تصحيح خطأ سابق]' : '📌 [قاعدة مستفادة]';
+          return `${idx + 1}. ${badge} ${r.title}:\n${r.content}`;
+        }).join('\n\n');
+    }
+
+    const defaultSysPrompt = `أنت مستشار ومساعد شات أكاديمي وجامعي خبير ومحرر محتوى ذكي لقنوات شؤون الطلاب.
+أنت في جلسة محادثة مفتوحة ومباشرة مع المشرف العام (@M_S_F_G) للتعلم المستمر، وحفظ القوالب والصيغ، وتصحيح أي أخطاء سابقة.
+- عندما يعطيك المشرف قالباً أو صيغة، اكد له حفظها وتطبيقها بدقة والتزم بها في أي صياغة خبرية قادمة.
+- عندما يوجهك لتصحيح خطأ سابق، اعترف بالخطأ واشرح كيف تلافيته والتزمت به في بنك الذاكرة ولن تكرره.
+- تجيب بطلاقة وبلاغة عربية فصيحة راقية، بنقاط واضحة ومباشرة مع إبراز المواعيد والشروط، وتحافظ على روابط البوابات الرسمية كاملة 100%.${memoryBlock}`;
+
+    const sysPrompt = customPrompt ? `${customPrompt}${memoryBlock}` : defaultSysPrompt;
+
+    // 3. بناء سلسلة المحادثة الحية (Multi-turn conversational messages)
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: sysPrompt }
+    ];
+
+    if (Array.isArray(conversationHistory)) {
+      const recentTurns = conversationHistory.slice(-8);
+      for (const turn of recentTurns) {
+        if (turn.role === 'user' || turn.role === 'assistant') {
+          messages.push({ role: turn.role, content: turn.content });
+        }
+      }
+    }
+    messages.push({ role: 'user', content: cleanUserMsg });
+
     const apiBase = process.env.AI_BASE_URL || 'https://api.hcnsec.cn/v1';
     const apiKey = process.env.AI_API_KEY || 'sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii';
-    
-    const sysPrompt = customPrompt || `أنت مستشار ومساعد شات أكاديمي وجامعي خبير للطلاب والباحثين.
-تجيب بطلاقة وبلاغة عربية فصيحة راقية، وتنظم إجاباتك بنقاط واضحة ومباشرة مع إبراز التواريخ والشروط، وتحافظ على روابط البوابات الرسمية كاملة. المشرف العام هو @M_S_F_G.`;
 
     const payload = {
       model,
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: message.trim() }
-      ],
+      messages,
       temperature: 0.3,
-      max_tokens: 2200
+      max_tokens: 2400
     };
 
-    const data = await callAICurl(apiBase, apiKey, payload, 35);
-    const msg = data.choices?.[0]?.message;
-    const reply = (msg?.content && typeof msg.content === 'string' && msg.content.trim()) ||
-                  (msg?.reasoning_content && typeof msg.reasoning_content === 'string' && msg.reasoning_content.trim()) ||
-                  'تمت معالجة استفسارك بنجاح.';
+    let reply = '';
+    let reasoning = null;
+
+    try {
+      const data = await callAICurl(apiBase, apiKey, payload, 35);
+      const msg = data.choices?.[0]?.message;
+      reply = (msg?.content && typeof msg.content === 'string' && msg.content.trim()) ||
+              (msg?.reasoning_content && typeof msg.reasoning_content === 'string' && msg.reasoning_content.trim()) || '';
+      reasoning = msg?.reasoning_content || null;
+    } catch (curlErr) {
+      if (process.env.GEMINI_API_KEY) {
+        reply = await callGemini(sysPrompt, cleanUserMsg);
+      } else {
+        throw curlErr;
+      }
+    }
+
+    if (!reply) {
+      reply = 'تم استلام توجيهك وسأطبقه فوراً في كافة عمليات الصياغة القادمة.';
+    }
 
     res.json({
       success: true,
       reply,
       model,
-      reasoning: msg?.reasoning_content || null
+      reasoning,
+      learnedRuleAdded,
+      totalLearnedRules: stateData.learned_rules?.length || 0
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -527,7 +893,7 @@ app.post('/api/news/crawl-all', async (_req: Request, res: Response) => {
 // 5.8 Sync Telegram Commands (setMyCommands) Endpoint
 app.post('/api/telegram/sync-commands', async (req: Request, res: Response) => {
   try {
-    const token = req.body.token || process.env.TELEGRAM_BOT_TOKEN || '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg';
+    const token = req.body.token || getActiveBotToken();
     const commandsList = [
       { command: "start", description: "🎛 اللوحة الرئيسية والقائمة الشاملة" },
       { command: "chat", description: "💬 محادثة وسؤال الذكاء الاصطناعي الأكاديمي" },

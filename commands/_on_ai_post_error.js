@@ -118,7 +118,7 @@ function toSafeHtml(txt) {
 
 var safe_html = toSafeHtml(formatted_text);
 var safe_caption = safe_html.length > 1020 ? safe_html.substring(0, 1016) + "..." : safe_html;
-var bot_token = Bot.getProperty("bot_token") || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
+var bot_token = Bot.getProperty("bot_token") || "8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U";
 
 // 4. النشر الفوري المباشر في قنوات الجامعة المحددة
 var sent_count = 0;

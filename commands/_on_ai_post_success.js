@@ -233,7 +233,7 @@ for (var i = 0; i < valid_targets.length; i++) {
 
   // محاولة أخيرة مباشرة عبر توكن البوت الثابت وHTTP.post لضمان النشر الفوري
   if (!sent_success) {
-    var bot_token = Bot.getProperty("bot_token") || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
+    var bot_token = Bot.getProperty("bot_token") || "8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U";
     try {
       if (media_file_id && (media_type === "photo" || media_type === "photo_doc")) {
         HTTP.post({
@@ -260,13 +260,13 @@ for (var i = 0; i < valid_targets.length; i++) {
 if (sent_count > 0) {
   Bot.setProperty(pub_fp, true, "boolean");
 } else {
-  var bot_token_err = Bot.getProperty("bot_token") || "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg";
+  var bot_token_err = Bot.getProperty("bot_token") || "8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U";
   var admin_chat_id = "7607633343";
   var alert_kicked = "⚠️ <b>تنبيه عاجل من نظام النشر الجامعي:</b>\n\n" +
     "تعذر إرسال المنشور إلى: <code>" + valid_targets.join("، ") + "</code>\n\n" +
     "🚨 <b>السبب المؤكد من خوادم تيليجرام:</b>\n" +
     "<code>Forbidden: bot was kicked from the supergroup chat</code>\n" +
-    "(البوت @Hhhgggggogddf_bot مطرود أو محظور أو ليس مشرفاً بصلاحية النشر في هذه القناة).\n\n" +
+    "(البوت @" + (Bot.getProperty("bot_username", "Jsjsjjjnxnbot")) + " مطرود أو محظور أو ليس مشرفاً بصلاحية النشر في هذه القناة).\n\n" +
     "🛠️ <b>خطوات الحل الفوري (خلال 30 ثانية):</b>\n" +
     "1. افتح إعدادات القناة/المجموعة " + valid_targets[0] + " في تيليجرام.\n" +
     "2. اذهب إلى: المشرفون (Administrators) -> المستخدمون المحظورون (Removed Users) وألغِ الحظر إن وجد.\n" +

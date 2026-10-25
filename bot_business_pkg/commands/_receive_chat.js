@@ -1,6 +1,6 @@
 /*CMD
   command: /receive_chat
-  help: استقبال رسالة المستخدم ومعالجة التعليمات أو السؤال عبر الذكاء
+  help: استقبال رسالة المستخدم ومعالجة التعليمات أو السؤال عبر الذكاء V4.0
   need_reply: true
   auto_retry_time: 
   folder: 
@@ -17,7 +17,30 @@ if (!message || message.trim() === "" || message.trim() === "/cancel") {
 
 var raw_msg = message.trim();
 
-// 1. فحص هل الرسالة عبارة عن تعليمات جديدة للمحرر
+// 1. فحص هل الرسالة عبارة عن تعليمات دائمة عبر "تعلم:"
+if (raw_msg.indexOf("تعلم:") === 0) {
+  var rule = raw_msg.replace(/^تعلم:\s*/, "").trim();
+  if (rule) {
+    var learned = Bot.getProperty("learned_instructions", []) || [];
+    if (!Array.isArray(learned)) learned = [];
+    if (learned.indexOf(rule) === -1) {
+      learned.push(rule);
+      Bot.setProperty("learned_instructions", learned, "json");
+    }
+    Bot.sendMessage("تم حفظ القاعدة في التعليمات الدائمة:\n" + rule);
+    return;
+  }
+}
+
+if (raw_msg === "نسيان السياق" || raw_msg === "/clear") {
+  if (typeof User !== "undefined" && User.setProperty) {
+    User.setProperty("chat_history", [], "json");
+  }
+  Bot.sendMessage("تم محو سياق المحادثة بنجاح ✅");
+  return;
+}
+
+// 2. فحص هل الرسالة عبارة عن تعليمات عامة للمحرر
 var is_instruction_command = false;
 var new_instruction_text = "";
 
@@ -38,12 +61,12 @@ if (raw_msg.indexOf("تعليمات:") === 0) {
 if (is_instruction_command && new_instruction_text.length > 5) {
   Bot.setProperty("custom_instructions", new_instruction_text, "string");
   
-  var success_text = "🎉 **تم بنجاح تحديث واعتماد تعليمات المشرف الأكاديمية!**\n" +
+  var success_text = "🎉 تم بنجاح تحديث واعتماد تعليمات المشرف الأكاديمية!\n" +
     "━━━━━━━━━━━━━━━━━━━\n\n" +
-    "📌 **نص التعليمات الجديد المعتمد**:\n" +
-    "*\"" + new_instruction_text + "\"*\n\n" +
+    "📌 نص التعليمات الجديد المعتمد:\n" +
+    "\"" + new_instruction_text + "\"\n\n" +
     "━━━━━━━━━━━━━━━━━━━\n" +
-    "✅ تم حفظ وتثبيت التعليمات فوراً في النظام والمستودع.\n" +
+    "✅ تم حفظ وتثبيت التعليمات فوراً في النظام.\n" +
     "⚡ سيقوم الذكاء الاصطناعي بتطبيقها في كافة عمليات إعادة الصياغة والنشر القادمة.";
 
   var kb = [
@@ -60,25 +83,41 @@ if (is_instruction_command && new_instruction_text.length > 5) {
   return;
 }
 
-// 2. إذا كانت الرسالة سؤالاً أو استفساراً، نرسلها لخادم الذكاء الاصطناعي
+// 3. معالجة السؤال أو الاستفسار عبر خادم الذكاء الاصطناعي
 Bot.setProperty("last_user_query", raw_msg, "string");
-Bot.sendMessage("🔍 **جاري البحث والمعالجة الذكية لسؤالك عبر خوارزميات الذكاء الأكاديمي...**\n`" + raw_msg + "`");
+if (typeof User !== "undefined" && User.setProperty) {
+  User.setProperty("pending_chat_query", raw_msg, "string");
+}
+Bot.sendMessage("🔍 جاري معالجة استفسارك والبحث الأكاديمي المباشر:\n\"" + raw_msg + "\"");
 
-var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
-var base_url = Bot.getProperty("ai_base_url", "https://api.hcnsec.cn/v1");
-var api_key = Bot.getProperty("ai_api_key", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii");
+var current_model = Bot.getProperty("ai_model") || "DeepSeek-V4.1-Flash";
+var base_url = Bot.getProperty("ai_base_url") || "https://api.hcnsec.cn/v1";
+var api_key = Bot.getProperty("ai_api_key") || "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii";
 var saved_ins = Bot.getProperty("custom_instructions", "");
+var learned_list = Bot.getProperty("learned_instructions", []) || [];
 
-var system_chat_prompt = "أنت 'المستشار الأكاديمي الذكي' للمشرف. تتحدث بأسلوب رسمي وودود في نفس الوقت، وتفهم بعمق تفاصيل الجامعات في الكويت والسعودية والخليج.\n" +
-  "• تجيب بدقة عن استفسارات المشرف دون مقدمات طويلة أو حشو.\n" +
-  "• إذا سألك عن إعانة ومكافأة طلاب جامعة AUM الكويت: وضح أن المكافأة الاجتماعية (200 دينار كويتي) تصرف شهرياً عبر مجلس الجامعات الخاصة (PUC) ويتم إيداعها في حسابات البنوك عادة بين 20 إلى 26 من الشهر.\n" +
-  "• تحتفظ بالروابط وتفهمها جيداً.\n" +
-  "• تحدث بأسلوب عربي فصيح، راقٍ، مباشر، بشرية تماماً.\n" +
-  "• لا تكرر قوالب جاهزة، وتجاوب مع كلام المشرف كشخص خبير ومخلص.";
+var system_chat_prompt = "أنت مساعد ومستشار أكاديمي خبير ومحرر محتوى رسمي لقنوات الجامعات.\n" +
+  "تتحدث مع المشرف العام @" + (Bot.getProperty("admin_user", "M_S_F_G")) + ".\n" +
+  "• تفهم وتجيب بطلاقة وبلاغة عربية فصيحة راقية عن أي سؤال أكاديمي (المكافآت والإعانات الاجتماعية، القبول الموحد، التقويم الجامعي، مواعيد الحذف والإضافة، الاختبارات النهائية، البوابات الإلكترونية، إلخ).\n" +
+  "• تحدث بأسلوب مباشر، ذكي، مقنع، وخالٍ من الحشو أو الرموز المشوهة.\n" +
+  "• إذا احتوت الرسالة على رابط، احتفظ به كاملاً ووضحه.";
 
 if (saved_ins) {
-  system_chat_prompt += "\nتعليمات المشرف الإضافية: " + saved_ins;
+  system_chat_prompt += "\nتعليمات المشرف المعتمدة: " + saved_ins;
 }
+if (learned_list && learned_list.length > 0) {
+  system_chat_prompt += "\nالقواعد والتعليمات الدائمة: " + learned_list.join(" | ");
+}
+
+var messages_payload = [
+  { role: "system", content: system_chat_prompt }
+];
+
+var user_history = (typeof User !== "undefined" && User.getProperty) ? (User.getProperty("chat_history", []) || []) : [];
+for (var h = 0; h < user_history.length; h++) {
+  messages_payload.push(user_history[h]);
+}
+messages_payload.push({ role: "user", content: raw_msg });
 
 var endpoint_url = base_url.replace(/\/+$/, "") + "/chat/completions";
 
@@ -90,12 +129,9 @@ HTTP.post({
   },
   body: {
     model: current_model,
-    messages: [
-      { role: "system", content: system_chat_prompt },
-      { role: "user", content: raw_msg }
-    ],
+    messages: messages_payload,
     temperature: 0.3,
-    max_tokens: 350
+    max_tokens: 2400
   },
   success: "/on_chat_success",
   error: "/on_chat_error",

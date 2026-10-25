@@ -36,6 +36,8 @@ export const CredentialsPanel: React.FC<Props> = ({
   const [showToken, setShowToken] = useState(false);
   const [showTelethonSecret, setShowTelethonSecret] = useState(false);
   const [copiedHelper, setCopiedHelper] = useState<string | null>(null);
+  const [isTestingBotLocal, setIsTestingBotLocal] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const tokenValidation = validateBotToken(config.botToken);
   const adminValidation = validateAdminId(config.adminId);
@@ -150,25 +152,103 @@ export const CredentialsPanel: React.FC<Props> = ({
               </div>
 
               {/* Bot Test Action Button & Status */}
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <p className="text-[11px] text-slate-400">
                   الحصول عليه من <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">@BotFather</a> عبر أمر <code className="text-sky-300">/newbot</code>
                 </p>
 
-                <button
-                  type="button"
-                  onClick={() => onTestBot(config.botToken)}
-                  disabled={!config.botToken || isTestingBot}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 hover:text-white text-xs font-semibold rounded-lg border border-sky-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isTestingBot ? (
-                    <div className="w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Zap className="w-3.5 h-3.5 text-sky-400" />
-                  )}
-                  <span>فحص التوكن الآن</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onTestBot(config.botToken)}
+                    disabled={!config.botToken || isTestingBot}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 hover:text-white text-xs font-semibold rounded-lg border border-sky-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isTestingBot ? (
+                      <div className="w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Zap className="w-3.5 h-3.5 text-sky-400" />
+                    )}
+                    <span>فحص التوكن</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!config.botToken) return;
+                      setIsTestingBotLocal(true);
+                      setSyncFeedback(null);
+                      try {
+                        const res = await fetch('/api/credentials/sync-token', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            token: config.botToken,
+                            adminId: config.adminId,
+                            adminUsername: config.adminUsername,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data.success && data.bot) {
+                          setSyncFeedback({
+                            success: true,
+                            message: `✅ ${data.message} (@${data.bot.username} - ID: ${data.bot.id})`,
+                          });
+                          onTestBot(config.botToken);
+                        } else {
+                          setSyncFeedback({
+                            success: false,
+                            message: `❌ ${data.error || 'فشلت المزامنة مع تيليجرام'}`,
+                          });
+                        }
+                      } catch (err: unknown) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        setSyncFeedback({
+                          success: false,
+                          message: `❌ خطأ في الاتصال: ${msg}`,
+                        });
+                      } finally {
+                        setIsTestingBotLocal(false);
+                      }
+                    }}
+                    disabled={!config.botToken || isTestingBotLocal}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-lg shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isTestingBotLocal ? (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>حفظ ومزامنة فورية (تيليجرام وترميكس)</span>
+                  </button>
+                </div>
               </div>
+
+              {/* Sync Feedback Message */}
+              {syncFeedback && (
+                <div
+                  className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+                    syncFeedback.success
+                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {syncFeedback.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    )}
+                    <span>{syncFeedback.message}</span>
+                  </div>
+                  <button
+                    onClick={() => setSyncFeedback(null)}
+                    className="text-slate-400 hover:text-white text-xs px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
 
               {/* Verified Bot Info Banner if available */}
               {botInfo && (
@@ -178,10 +258,11 @@ export const CredentialsPanel: React.FC<Props> = ({
                     <div>
                       <span className="font-bold text-emerald-300">{botInfo.first_name}</span>
                       <span className="text-slate-400 mx-1.5 font-mono">(@{botInfo.username})</span>
+                      <span className="text-[10px] text-slate-500 font-mono">ID: {botInfo.id}</span>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-semibold rounded-md">
-                    جاهز للعمل
+                    جاهز ومُزامن بنجاح
                   </span>
                 </div>
               )}

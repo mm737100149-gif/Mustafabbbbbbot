@@ -28,7 +28,10 @@ var ai_reply = "";
 try {
   var data = JSON.parse(content);
   if (data.choices && data.choices[0] && data.choices[0].message) {
-    ai_reply = data.choices[0].message.content.trim();
+    var m = data.choices[0].message;
+    var c_txt = (m.content && typeof m.content === "string") ? m.content.trim() : "";
+    var r_txt = (m.reasoning_content && typeof m.reasoning_content === "string") ? m.reasoning_content.trim() : "";
+    ai_reply = c_txt || r_txt || "";
   }
 } catch (e) {}
 
@@ -37,6 +40,19 @@ if (!ai_reply) {
 }
 
 ai_reply = cleanArabicText(ai_reply);
+
+if (typeof User !== "undefined" && User.getProperty && User.setProperty) {
+  var user_q = User.getProperty("pending_chat_query", "") || Bot.getProperty("last_user_query", "");
+  var hist = User.getProperty("chat_history", []) || [];
+  if (!Array.isArray(hist)) hist = [];
+  if (user_q) {
+    hist.push({ role: "user", content: user_q });
+    hist.push({ role: "assistant", content: ai_reply });
+    if (hist.length > 20) hist = hist.slice(hist.length - 20);
+    User.setProperty("chat_history", hist, "json");
+    User.setProperty("pending_chat_query", "", "string");
+  }
+}
 
 var current_model = Bot.getProperty("ai_model", "DeepSeek-V4-Flash");
 Bot.setProperty("pending_chat_reply", ai_reply, "string");

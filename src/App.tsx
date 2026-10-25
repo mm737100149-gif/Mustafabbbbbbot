@@ -44,7 +44,7 @@ const STORAGE_KEY_CONFIG = 'tg_educational_config_v2';
 const STORAGE_KEY_SOURCES = 'tg_educational_sources_v2';
 
 const DEFAULT_CONFIG: BotConfig = {
-  botToken: '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg',
+  botToken: '8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U',
   adminId: '7607633343',
   adminUsername: '@M_S_F_G',
   additionalAdminIds: [],
@@ -164,22 +164,22 @@ export default function App() {
         return {
           ...DEFAULT_CONFIG,
           ...parsed,
-          botToken: '',
+          botToken: parsed.botToken || DEFAULT_CONFIG.botToken,
           adminId: parsed.adminId || DEFAULT_CONFIG.adminId,
           adminUsername: parsed.adminUsername || DEFAULT_CONFIG.adminUsername,
           ai: {
             ...DEFAULT_CONFIG.ai,
             ...(parsed.ai || {}),
             apiBase: parsed.ai?.apiBase || DEFAULT_CONFIG.ai.apiBase,
-            apiKey: '',
+            apiKey: parsed.ai?.apiKey || DEFAULT_CONFIG.ai.apiKey,
             primaryModel: parsed.ai?.primaryModel || DEFAULT_CONFIG.ai.primaryModel,
             fallbackModel: parsed.ai?.fallbackModel || DEFAULT_CONFIG.ai.fallbackModel,
           },
           telethon: {
             ...DEFAULT_CONFIG.telethon,
             ...(parsed.telethon || {}),
-            apiHash: '',
-            stringSession: '',
+            apiHash: parsed.telethon?.apiHash || '',
+            stringSession: parsed.telethon?.stringSession || '',
           },
         };
       }
@@ -204,13 +204,21 @@ export default function App() {
   const [isTesterModalOpen, setIsTesterModalOpen] = useState(false);
   const [isTestingBot, setIsTestingBot] = useState(false);
   const [isSavingSources, setIsSavingSources] = useState(false);
-  const [botInfo, setBotInfo] = useState<BotInfo | null>(null);
+  const [botInfo, setBotInfo] = useState<BotInfo | null>({
+    id: 8812285802,
+    is_bot: true,
+    first_name: 'Jjjx',
+    username: 'Jsjsjjjnxnbot',
+    can_join_groups: true,
+    can_read_all_group_messages: false,
+    supports_inline_queries: false,
+  });
   const [botTestError, setBotTestError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync with sources.json on backend mount
+  // Sync with sources.json and credentials on backend mount
   useEffect(() => {
-    const fetchSources = async () => {
+    const fetchSourcesAndCredentials = async () => {
       try {
         const res = await fetch('/api/sources');
         if (res.ok) {
@@ -222,8 +230,36 @@ export default function App() {
       } catch (e) {
         console.warn('Sources fetch fallback to local state', e);
       }
+
+      try {
+        const credRes = await fetch('/api/credentials/current');
+        if (credRes.ok) {
+          const credData = await credRes.json();
+          if (credData.token) {
+            setConfig(prev => ({
+              ...prev,
+              botToken: credData.token,
+              adminId: credData.adminId || prev.adminId,
+              adminUsername: credData.adminUsername || prev.adminUsername,
+            }));
+            if (credData.botUsername) {
+              setBotInfo({
+                id: Number(credData.botId) || 8812285802,
+                is_bot: true,
+                first_name: 'Jjjx',
+                username: credData.botUsername,
+                can_join_groups: true,
+                can_read_all_group_messages: false,
+                supports_inline_queries: false,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Credentials fetch fallback', e);
+      }
     };
-    fetchSources();
+    fetchSourcesAndCredentials();
   }, []);
 
   // Persistence
@@ -385,7 +421,7 @@ export default function App() {
       const res = await fetch('/api/telegram/sync-commands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: config.botToken || '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg' })
+        body: JSON.stringify({ token: config.botToken || '8812285802:AAGJ7zXy_JUVmBY2QddqbT_NSrmTe_XZY5U' })
       });
       const data = await res.json();
       if (data.success) {

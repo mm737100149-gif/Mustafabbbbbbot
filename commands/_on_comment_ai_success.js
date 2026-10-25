@@ -37,5 +37,17 @@ try {
   });
 } catch (err) {}
 
+// حفظ سياق صاحب التعليق
+var uid = ctx.user_id || (ctx.from && ctx.from.id);
+if (uid) {
+  var user_text = ctx.text || ctx.student_text || "";
+  var historyKey = "comment_history_" + uid;
+  var history = Bot.getProperty(historyKey, []) || [];
+  history.push({ role: "user", content: user_text });
+  history.push({ role: "assistant", content: answer });
+  if (history.length > 20) history = history.slice(history.length - 20);
+  Bot.setProperty(historyKey, history, "json");
+}
+
 // تنظيف السياق
 Bot.setProperty(ctx_id, null, "json");
