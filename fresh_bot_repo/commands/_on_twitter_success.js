@@ -201,8 +201,8 @@ HTTP.post({
       { role: "system", content: system_prompt },
       { role: "user", content: found_tweet.text }
     ],
-    temperature: 0.2,
-    max_tokens: 1500
+    temperature: 0.25,
+    max_tokens: 2200
   },
   success: "/on_ai_post_success " + ctx_id,
   error: "/on_ai_post_error " + ctx_id,

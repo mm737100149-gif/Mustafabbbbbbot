@@ -96,8 +96,8 @@ HTTP.post({
       { role: "system", content: system_chat_prompt },
       { role: "user", content: raw_msg }
     ],
-    temperature: 0.25,
-    max_tokens: 1400
+    temperature: 0.3,
+    max_tokens: 2400
   },
   success: "/on_chat_success",
   error: "/on_chat_error",

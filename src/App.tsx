@@ -20,6 +20,8 @@ import { DeploymentGuide } from './components/DeploymentGuide.tsx';
 import { LicenseRightsModal } from './components/LicenseRightsModal.tsx';
 import { BotTesterModal } from './components/BotTesterModal.tsx';
 import { UserBotPanel } from './components/UserBotPanel.tsx';
+import { AIChatConsole } from './components/AIChatConsole.tsx';
+import { LiveNewsCrawlerPanel } from './components/LiveNewsCrawlerPanel.tsx';
 import {
   Shield,
   Sparkles,
@@ -33,25 +35,28 @@ import {
   Activity,
   BookOpen,
   Smartphone,
+  MessageSquare,
+  Rss,
+  RefreshCw,
 } from 'lucide-react';
 
 const STORAGE_KEY_CONFIG = 'tg_educational_config_v2';
 const STORAGE_KEY_SOURCES = 'tg_educational_sources_v2';
 
 const DEFAULT_CONFIG: BotConfig = {
-  botToken: '',
+  botToken: '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg',
   adminId: '7607633343',
   adminUsername: '@M_S_F_G',
   additionalAdminIds: [],
-  targetChannels: [],
+  targetChannels: ['@jhdhhdcj'],
   notifyAdminOnForward: true,
   enableTelegramAdminCommands: true,
   preferredEngine: 'userbot',
   ai: {
-    apiBase: 'https://api.openai.com/v1',
-    apiKey: '',
-    primaryModel: 'gpt-4o-mini',
-    fallbackModel: 'auto',
+    apiBase: 'https://api.hcnsec.cn/v1',
+    apiKey: 'sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii',
+    primaryModel: 'DeepSeek-V4.1-Flash',
+    fallbackModel: 'DeepSeek-V4-Flash',
     systemPrompt: `# الدور: محرر محتوى تعليمي جامعي
 ## الهوية
 أنت محرر محتوى متخصص في الشؤون التعليمية الجامعية. مهمتك إعادة صياغة المنشورات من قنوات وحسابات جامعية بأسلوب أوضح وأدق، مع الحفاظ على المصداقية الكاملة مثل مشرفي القروبات المخلصين.
@@ -194,7 +199,7 @@ export default function App() {
   });
 
   const [logs, setLogs] = useState<ActivityLogItem[]>(INITIAL_LOGS);
-  const [activeTab, setActiveTab] = useState<'all' | 'userbot' | 'github' | 'sources' | 'ai' | 'ad' | 'sim' | 'code' | 'guide'>('github');
+  const [activeTab, setActiveTab] = useState<'all' | 'chat' | 'crawler' | 'userbot' | 'github' | 'sources' | 'ai' | 'ad' | 'sim' | 'code' | 'guide'>('chat');
   const [isLicenseOpen, setIsLicenseOpen] = useState(false);
   const [isTesterModalOpen, setIsTesterModalOpen] = useState(false);
   const [isTestingBot, setIsTestingBot] = useState(false);
@@ -372,6 +377,30 @@ export default function App() {
     e.target.value = '';
   };
 
+  const [isSyncingCommands, setIsSyncingCommands] = useState(false);
+
+  const handleSyncTelegramCommands = async () => {
+    setIsSyncingCommands(true);
+    try {
+      const res = await fetch('/api/telegram/sync-commands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: config.botToken || '8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('🎉 تمت مزامنة وتسجيل كافة أوامر البوت الـ 11 في تيليجرام بنجاح 100%!');
+      } else {
+        showToast(`⚠️ ${data.error || 'فشلت المزامنة'}`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(`❌ خطأ في الاتصال: ${msg}`);
+    } finally {
+      setIsSyncingCommands(false);
+    }
+  };
+
   const handleResetDefaults = () => {
     if (window.confirm('هل تريد إعادة تعيين كافة الإعدادات والمصادر إلى الحالة الافتراضية؟')) {
       setConfig(DEFAULT_CONFIG);
@@ -408,36 +437,49 @@ export default function App() {
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="px-2.5 py-0.5 text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg">
-                  محرر محتوى جامعي ذكي
+                  محرر ومستشار جامعي ذكي
                 </span>
                 <span className="px-2.5 py-0.5 text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg">
                   DeepSeek-V4.1-Flash
                 </span>
                 <span className="px-2.5 py-0.5 text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/40 rounded-lg flex items-center gap-1">
-                  <span>البوت:</span>
-                  <span className="font-mono" dir="ltr">@admiuin_bot</span>
+                  <span>البوت المعتمد:</span>
+                  <span className="font-mono" dir="ltr">@Hhhgggggogddf_bot</span>
                 </span>
                 <span className="px-2.5 py-0.5 text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-lg flex items-center gap-1">
-                  <span>الآدمن:</span>
+                  <span>المشرف:</span>
                   <span className="font-mono" dir="ltr">{config.adminUsername} ({config.adminId})</span>
+                </span>
+                <span className="px-2.5 py-0.5 text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg flex items-center gap-1">
+                  <span>القناة الهدف:</span>
+                  <span className="font-mono" dir="ltr">@jhdhhdcj</span>
                 </span>
               </div>
 
               <h2 className="text-lg sm:text-xl font-extrabold text-white">
-                نظام المراقبة وإعادة الصياغة الأكاديمية ونشر الكتب وإعلانات الخدمات الطلابية
+                منصة النشر الأكاديمي الذكي، شات الطلاب، وسحب مصادر الجامعات اللحظي
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-                يراقب القنوات الجامعية وحسابات X وموجزات RSS، ويعيد صياغة المنشورات بأسلوب مشرفي القروبات الأكفاء (عنوان 📌، نقاط واضحة، دعوة للتفاعل 💬، هاشتاجات)، ويستبدل إعلانات المنافسين بإعلانات خدماتك الطلابية تلقائياً.
+                يراقب القنوات وحسابات تويتر وأخبار جوجل، ويقدم شات ذكاء اصطناعي فوري للطلاب والمشرف، ويعيد صياغة الأخبار أكاديمياً (عنوان 📌، نقاط واضحة، تفاعل 💬، هاشتاجات)، ويستبدل إعلانات المنافسين بإعلانات خدماتك @M_S_F_G تلقائياً.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
+            <div className="flex flex-wrap items-center gap-2.5 self-end lg:self-center shrink-0">
+              <button
+                onClick={handleSyncTelegramCommands}
+                disabled={isSyncingCommands}
+                className="px-3.5 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg border border-sky-400/40 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCommands ? 'animate-spin' : ''}`} />
+                <span>{isSyncingCommands ? 'جاري المزامنة...' : 'مزامنة أوامر تيليجرام (Sync Commands)'}</span>
+              </button>
+
               <button
                 onClick={() => setIsLicenseOpen(true)}
                 className="px-3.5 py-2 bg-slate-900/90 hover:bg-slate-800 text-emerald-300 text-xs font-semibold rounded-xl border border-emerald-700/50 transition-colors flex items-center gap-1.5"
               >
                 <Shield className="w-4 h-4 text-emerald-400" />
-                <span>حفظ حقوق Redian Marku (MIT)</span>
+                <span>حقوق النشر (MIT)</span>
               </button>
             </div>
           </div>
@@ -457,6 +499,30 @@ export default function App() {
               عرض الكل
             </button>
             <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-t-xl font-bold transition-all shrink-0 ${
+                activeTab === 'chat'
+                  ? 'bg-slate-800 text-white border-b-2 border-sky-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-sky-400" />
+              <span className="font-extrabold text-sky-300">💬 شات الذكاء الأكاديمي المباشر</span>
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+            </button>
+            <button
+              onClick={() => setActiveTab('crawler')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-t-xl font-bold transition-all shrink-0 ${
+                activeTab === 'crawler'
+                  ? 'bg-slate-800 text-white border-b-2 border-emerald-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Rss className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="font-extrabold text-emerald-300">🔄 جلب الأخبار وسحب المصادر</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
+            <button
               onClick={() => setActiveTab('userbot')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-t-xl font-bold transition-all shrink-0 ${
                 activeTab === 'userbot'
@@ -465,18 +531,7 @@ export default function App() {
               }`}
             >
               <Smartphone className="w-3.5 h-3.5 text-purple-400" />
-              <span className="font-extrabold text-purple-300">اليوزربوت وسحب القنوات (UserBot)</span>
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-            </button>
-            <button
-              onClick={() => setActiveTab('github')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-t-xl font-bold transition-all shrink-0 ${
-                activeTab === 'github'
-                  ? 'bg-slate-800 text-white border-b-2 border-indigo-500'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <span className="shrink-0">الربط بـ GitHub وبوت بزنس</span>
+              <span className="font-extrabold text-purple-300">اليوزربوت وTermux</span>
             </button>
             <button
               onClick={() => setActiveTab('sources')}
@@ -487,7 +542,7 @@ export default function App() {
               }`}
             >
               <Layers className="w-3.5 h-3.5 text-sky-400" />
-              <span>المصادر ({sources.length})</span>
+              <span>المصادر والجامعات ({sources.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('ai')}
@@ -498,7 +553,7 @@ export default function App() {
               }`}
             >
               <Brain className="w-3.5 h-3.5 text-indigo-400" />
-              <span>الذكاء الاصطناعي والتعليمات</span>
+              <span>التعليمات والنموذج</span>
             </button>
             <button
               onClick={() => setActiveTab('ad')}
@@ -509,7 +564,7 @@ export default function App() {
               }`}
             >
               <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
-              <span>استبدال إعلانات المنافسين</span>
+              <span>إعلانات الخدمات البديلة</span>
             </button>
             <button
               onClick={() => setActiveTab('sim')}
@@ -520,7 +575,17 @@ export default function App() {
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>مختبر الصياغة الحية</span>
+              <span>مختبر الصياغة</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('github')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-t-xl font-bold transition-all shrink-0 ${
+                activeTab === 'github'
+                  ? 'bg-slate-800 text-white border-b-2 border-indigo-500'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span className="shrink-0">الربط بـ GitHub وبوت بزنس</span>
             </button>
             <button
               onClick={() => setActiveTab('code')}
@@ -539,6 +604,32 @@ export default function App() {
           <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-slate-950 to-transparent sm:hidden"></div>
         </div>
 
+        {/* 1. Live Interactive AI Chat Console */}
+        {(activeTab === 'all' || activeTab === 'chat') && (
+          <section id="ai-chat-console-section">
+            <AIChatConsole
+              botToken={config.botToken}
+              targetChannel={config.targetChannels[0] || '@jhdhhdcj'}
+              onPostSuccess={(msgId) => {
+                showToast(`🎉 تم نشر الرد بنجاح في القناة (رقم الرسالة: ${msgId})!`);
+              }}
+            />
+          </section>
+        )}
+
+        {/* 2. Live News Crawler & Real-time Feeds */}
+        {(activeTab === 'all' || activeTab === 'crawler') && (
+          <section id="live-crawler-section">
+            <LiveNewsCrawlerPanel
+              targetChannel={config.targetChannels[0] || '@jhdhhdcj'}
+              onSendToChat={(txt) => {
+                setActiveTab('chat');
+                showToast('تم نقل نص المنشور إلى شات الذكاء لمراجعته وصياغته!');
+              }}
+            />
+          </section>
+        )}
+
         {/* UserBot & Channel Scraping (Telethon / Pyrogram Session) */}
         {(activeTab === 'all' || activeTab === 'userbot') && (
           <section id="userbot-section">
@@ -555,7 +646,7 @@ export default function App() {
           <section id="github-section">
             <GitHubHostingGuide
               adminUsername={config.adminUsername}
-              botUsername="admiuin_bot"
+              botUsername="Hhhgggggogddf_bot"
             />
           </section>
         )}

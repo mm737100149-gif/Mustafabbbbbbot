@@ -90,7 +90,10 @@ var rephrased_text = "";
 try {
   var data = JSON.parse(content);
   if (data.choices && data.choices[0] && data.choices[0].message) {
-    rephrased_text = data.choices[0].message.content.trim();
+    var m = data.choices[0].message;
+    var c_txt = (m.content && typeof m.content === "string") ? m.content.trim() : "";
+    var r_txt = (m.reasoning_content && typeof m.reasoning_content === "string") ? m.reasoning_content.trim() : "";
+    rephrased_text = c_txt || r_txt || "";
   }
 } catch (e) {}
 
