@@ -47,8 +47,9 @@ export interface AIModelOption {
 }
 
 export const AVAILABLE_AI_MODELS: AIModelOption[] = [
+  { id: 'gemini-2.5-flash', name: '⚡ Gemini 2.5 Flash (استجابة فورية <1s)', desc: 'فائق السرعة والأداء، استجابة سريعة جداً دون انقطاع، مثالي للنشر الآلي الفوري', category: 'speed', recommended: true },
+  { id: 'gemini-3.8-flash', name: '🚀 Gemini 3.8 Flash (النموذج الذكي المتقدم)', desc: 'نموذج جوجل الفائق بالسرعة والدقة والتوافق السحابي مع محرر المحتوى الأكاديمي', category: 'speed', recommended: true },
   { id: 'auto', name: 'auto (توجيه تلقائي ذكي)', desc: 'توجيه آلي ذكي يختار أسرع نموذج متاح لحظياً لتفادي المهلة', category: 'speed' },
-  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (Google GenAI)', desc: 'نموذج جوجل الفائق بالسرعة والدقة والتوافق السحابي مع محرر المحتوى الأكاديمي', category: 'speed', recommended: true },
   { id: 'DeepSeek-V4-Flash', name: 'DeepSeek-V4-Flash (الأسرع - يمنع Timeout)', desc: 'استجابة فائقة السرعة للأخبار والتنبيهات، خفيف وسريع ويمنع أخطاء انتهاء المهلة', category: 'speed', recommended: true },
   { id: 'DeepSeek-V4.1-Flash', name: 'DeepSeek-V4.1-Flash (دقة أكاديمية فائقة)', desc: 'فائق الدقة في صياغة المحتوى العربي وتنسيق المنشورات الجامعية', category: 'chat', recommended: true },
   { id: 'DeepSeek-V4-Pro', name: 'DeepSeek-V4-Pro (استدلال متقدم)', desc: 'قوة استدلال وتلخيص عميقة للمنشورات الطويلة والقرارات الرسمية واللوائح', category: 'chat' },

@@ -67,13 +67,17 @@ export function AIChatConsole({
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('DeepSeek-V4.1-Flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openReasoningId, setOpenReasoningId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'chat' | 'memory'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'template' | 'memory'>('chat');
   const [memoryRules, setMemoryRules] = useState<LearnedRule[]>([]);
+  const [masterTemplate, setMasterTemplate] = useState<{ id: string; name: string; structure: string; isActive: boolean; lastUpdated?: string } | null>(null);
+  const [templateStructure, setTemplateStructure] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [isResettingTemplate, setIsResettingTemplate] = useState(false);
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [newRuleType, setNewRuleType] = useState<'template' | 'rule' | 'correction'>('template');
   const [newRuleTitle, setNewRuleTitle] = useState('');
@@ -84,6 +88,21 @@ export function AIChatConsole({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchTemplate = async () => {
+    try {
+      const res = await fetch('/api/template');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.template) {
+          setMasterTemplate(data.template);
+          setTemplateStructure(data.template.structure || '');
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch template', e);
+    }
   };
 
   const fetchMemory = async () => {
@@ -102,7 +121,55 @@ export function AIChatConsole({
 
   useEffect(() => {
     fetchMemory();
+    fetchTemplate();
+    const interval = setInterval(() => {
+      fetchMemory();
+      fetchTemplate();
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
+
+  const handleSaveTemplate = async () => {
+    if (!templateStructure.trim()) return;
+    setIsSavingTemplate(true);
+    try {
+      const res = await fetch('/api/template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          structure: templateStructure.trim(),
+          name: masterTemplate?.name || 'القالب الأكاديمي الموحد الدائم',
+          isActive: true
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMasterTemplate(data.template);
+        setStatusMessage('✅ تم اعتماد وحفظ القالب الأكاديمي الدائم بنجاح ومزامنته فوراً مع التيليجرام والويب!');
+      }
+    } catch (err) {
+      setStatusMessage('❌ تعذر حفظ القالب.');
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleResetTemplate = async () => {
+    setIsResettingTemplate(true);
+    try {
+      const res = await fetch('/api/template/reset', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setMasterTemplate(data.template);
+        setTemplateStructure(data.template.structure);
+        setStatusMessage('✅ تمت استعادة القالب الأكاديمي الافتراضي بنجاح.');
+      }
+    } catch (err) {
+      console.warn('Reset template error', err);
+    } finally {
+      setIsResettingTemplate(false);
+    }
+  };
 
   useEffect(() => {
     if (activeView === 'chat') {
@@ -355,6 +422,18 @@ export function AIChatConsole({
             </button>
 
             <button
+              onClick={() => setActiveView('template')}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition-all ${
+                activeView === 'template'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BookmarkPlus className="w-3.5 h-3.5 text-amber-300" />
+              <span>القالب الدائم 📐</span>
+            </button>
+
+            <button
               onClick={() => setActiveView('memory')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition-all ${
                 activeView === 'memory'
@@ -367,18 +446,18 @@ export function AIChatConsole({
             </button>
           </div>
 
-          {/* Model Switcher */}
+          {/* Model Switcher with Ultra-Fast Gemini First */}
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl text-xs">
-            <Cpu className="w-3.5 h-3.5 text-sky-400" />
+            <Zap className="w-3.5 h-3.5 text-emerald-400" />
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-emerald-300 font-bold font-mono text-xs focus:outline-none cursor-pointer"
             >
+              <option value="gemini-2.5-flash" className="bg-slate-900 text-emerald-400">⚡ Gemini 2.5 Flash (&lt;1s سريع جداً)</option>
+              <option value="gemini-3.8-flash" className="bg-slate-900 text-sky-400">🚀 Gemini 3.8 Flash (المتقدم)</option>
               <option value="DeepSeek-V4.1-Flash" className="bg-slate-900 text-white">DeepSeek-V4.1-Flash</option>
               <option value="DeepSeek-V4-Flash" className="bg-slate-900 text-white">DeepSeek-V4-Flash</option>
-              <option value="DeepSeek-V4-Pro" className="bg-slate-900 text-white">DeepSeek-V4-Pro</option>
-              <option value="gemini-3.8-flash" className="bg-slate-900 text-white">Gemini 3.8 Flash</option>
             </select>
           </div>
 
@@ -585,6 +664,108 @@ export function AIChatConsole({
             </form>
           </div>
         </>
+      ) : activeView === 'template' ? (
+        /* MASTER TEMPLATE VIEW */
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+            <div>
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <BookmarkPlus className="w-4 h-4 text-amber-400" />
+                <span>القالب الأكاديمي المعتمد الدائم (Master Template)</span>
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                هذا القالب يطبق دائماً وبشكل إلزامي على كل صياغة خبرية وإعادة نشر تتم عبر لوحة الويب أو بوت التيليجرام.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetTemplate}
+                disabled={isResettingTemplate}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-all"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isResettingTemplate ? 'animate-spin' : ''}`} />
+                <span>استعادة الافتراضي</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                disabled={isSavingTemplate || !templateStructure.trim()}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-900/30 transition-all disabled:opacity-40"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{isSavingTemplate ? 'جاري الحفظ...' : 'حفظ واعتماد القالب الدائم'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Editor Area */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span>محرر هيكل وصيغة القالب الدائم:</span>
+                </label>
+                <span className="text-[11px] text-slate-500">يتزامن تلقائياً مع أمر /template في التيليجرام</span>
+              </div>
+
+              <textarea
+                rows={12}
+                value={templateStructure}
+                onChange={(e) => setTemplateStructure(e.target.value)}
+                placeholder="أدخل هيكل القالب المعتمد..."
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-2xl p-4 text-xs text-white leading-relaxed font-mono focus:outline-none shadow-inner"
+              />
+
+              <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 space-y-1">
+                <span className="font-bold text-slate-300">💡 المتغيرات المدعومة في القالب:</span>
+                <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
+                  <span className="px-2 py-0.5 bg-slate-900 text-amber-300 rounded border border-slate-800">&#123;title&#125; - العنوان البارز</span>
+                  <span className="px-2 py-0.5 bg-slate-900 text-sky-300 rounded border border-slate-800">&#123;content&#125; - تفاصيل الخبر والمواعيد</span>
+                  <span className="px-2 py-0.5 bg-slate-900 text-emerald-300 rounded border border-slate-800">&#123;link&#125; - رابط التقديم الرسمي</span>
+                  <span className="px-2 py-0.5 bg-slate-900 text-purple-300 rounded border border-slate-800">#&#123;univ_tag&#125; - وسم الجامعة المستهدفة</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview Area */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>المعاينة الحية الفورية للمنشور بالقالب:</span>
+                </label>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                  مطبّق الآن 100%
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-950 border border-emerald-500/20 rounded-2xl shadow-xl flex flex-col justify-between h-[300px] overflow-y-auto">
+                <div className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
+                  {templateStructure
+                    .replace('{title}', 'بدء استقبال طلبات التحويل الداخلي والخارجي للفصل القادم')
+                    .replace('{content}', '• فتح بوابة التحويل لجميع التخصصات والكليات العلمية والإنسانية.\n• آخر موعد لرفع الطلبات والوثائق هو يوم الخميس 15 رجب.\n• يشترط ألا يقل المعدل التراكمي عن 3.75 مع استيفاء شروط الكلية.')
+                    .replace('{link}', 'https://dar.ksu.edu.sa/admission')
+                    .replace('{univ_tag}', 'جامعة_الملك_سعود')}
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
+                  <span>📱 مظهر النشر في قناة التلجرام: {targetChannel}</span>
+                  <span className="text-emerald-400 font-mono font-bold">جاهز ومعتمد</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-950/20 border border-amber-500/20 rounded-xl text-xs text-amber-200/90 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  <strong>المزامنة التلقائية:</strong> أي تعديل تجريه هنا يظهر مباشرة للبوت في تيليجرام عند طلب <code>/template</code> أو عند إعادة صياغة أي خبر.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         /* MEMORY BANK & LEARNED RULES VIEW */
         <div className="flex-1 overflow-y-auto p-5 space-y-5">

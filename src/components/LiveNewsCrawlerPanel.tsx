@@ -66,19 +66,21 @@ export function LiveNewsCrawlerPanel({
 
   useEffect(() => {
     fetchLiveNews();
+    const interval = setInterval(fetchLiveNews, 45000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleRephraseAndPublish = async (item: NewsItem, idx: number) => {
     setProcessingIndex(idx);
     setStatusMessage(null);
     try {
-      // 1. Rephrase with AI
+      // 1. Rephrase with fast AI (<1s)
       const aiResp = await fetch('/api/ai/rephrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: item.text,
-          model: 'DeepSeek-V4.1-Flash'
+          model: 'gemini-2.5-flash'
         })
       });
       const aiData = await aiResp.json();
@@ -96,7 +98,7 @@ export function LiveNewsCrawlerPanel({
       });
       const pubData = await pubResp.json();
       if (pubData.success) {
-        setStatusMessage(`🎉 تم إعادة الصياغة بالذكاء ونشر الخبر فوراً في ${targetChannel} (معرف الرسالة: ${pubData.messageId})!`);
+        setStatusMessage(`🎉 تم إعادة الصياغة بالقالب الدائم ونشر الخبر فوراً في ${targetChannel} (معرف الرسالة: ${pubData.messageId})!`);
       } else {
         setStatusMessage(`❌ فشل النشر في تيليجرام: ${pubData.error || 'خطأ'}`);
       }
@@ -119,12 +121,13 @@ export function LiveNewsCrawlerPanel({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-extrabold text-white">مركز فحص وجلب الأخبار اللحظي (Live News Crawler)</h3>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full">
-                3 محركات متزامنة
+              <span className="px-2.5 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                جلب تلقائي وسريع نشط ⚡
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              يسحب الأخبار فوراً من قنوات تيليجرام، وتويتر (Nitter)، وأخبار جوجل للجامعات
+              يسحب الأخبار فوراً من كافة قنوات تيليجرام وحسابات تويتر (Nitter) وأخبار جوجل دون تجاهل أي حساب مرتبط
             </p>
           </div>
         </div>

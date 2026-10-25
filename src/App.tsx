@@ -216,12 +216,13 @@ export default function App() {
   const [botTestError, setBotTestError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync with sources.json and credentials on backend mount
+  // Continuous Real-Time Two-Way Sync with server.ts and Telegram state
   useEffect(() => {
+    let isMounted = true;
     const fetchSourcesAndCredentials = async () => {
       try {
         const res = await fetch('/api/sources');
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
             setSources(data.sources);
@@ -233,24 +234,30 @@ export default function App() {
 
       try {
         const credRes = await fetch('/api/credentials/current');
-        if (credRes.ok) {
+        if (credRes.ok && isMounted) {
           const credData = await credRes.json();
           if (credData.token) {
-            setConfig(prev => ({
-              ...prev,
-              botToken: credData.token,
-              adminId: credData.adminId || prev.adminId,
-              adminUsername: credData.adminUsername || prev.adminUsername,
-            }));
+            setConfig(prev => {
+              if (prev.botToken === credData.token && prev.adminId === credData.adminId) return prev;
+              return {
+                ...prev,
+                botToken: credData.token,
+                adminId: credData.adminId || prev.adminId,
+                adminUsername: credData.adminUsername || prev.adminUsername,
+              };
+            });
             if (credData.botUsername) {
-              setBotInfo({
-                id: Number(credData.botId) || 8812285802,
-                is_bot: true,
-                first_name: 'Jjjx',
-                username: credData.botUsername,
-                can_join_groups: true,
-                can_read_all_group_messages: false,
-                supports_inline_queries: false,
+              setBotInfo(prev => {
+                if (prev?.username === credData.botUsername) return prev;
+                return {
+                  id: Number(credData.botId) || 8812285802,
+                  is_bot: true,
+                  first_name: 'Jjjx',
+                  username: credData.botUsername,
+                  can_join_groups: true,
+                  can_read_all_group_messages: false,
+                  supports_inline_queries: false,
+                };
               });
             }
           }
@@ -259,7 +266,13 @@ export default function App() {
         console.warn('Credentials fetch fallback', e);
       }
     };
+
     fetchSourcesAndCredentials();
+    const interval = setInterval(fetchSourcesAndCredentials, 3500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Persistence

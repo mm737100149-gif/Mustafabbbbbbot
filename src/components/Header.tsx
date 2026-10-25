@@ -55,14 +55,17 @@ export const Header: React.FC<Props> = ({
 
         {/* Action Controls */}
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full md:w-auto">
-          {/* Quick status pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-950/60 rounded-xl border border-slate-800 text-xs shrink-0">
-            <span className={`w-2 h-2 rounded-full ${hasCredentials ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-amber-400'}`}></span>
-            <span className="text-slate-300 whitespace-nowrap">
-              {hasCredentials ? 'الاعتمادات مهيأة' : 'بانتظار التوكن/الآدمن'}
+          {/* Real-time Two-Way Sync pill */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-xs shrink-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-slate-600">|</span>
-            <span className="text-slate-400 whitespace-nowrap">{rulesCount} مصادر</span>
+            <span className="text-emerald-300 font-bold whitespace-nowrap">
+              مزامنة لحظية ⚡ (Telegram ↔ الويب)
+            </span>
+            <span className="text-emerald-700 hidden sm:inline">|</span>
+            <span className="text-slate-400 hidden sm:inline whitespace-nowrap">{rulesCount} مصادر</span>
           </div>
 
           {/* Export JSON */}

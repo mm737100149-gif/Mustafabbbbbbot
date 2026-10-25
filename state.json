@@ -5,11 +5,23 @@
   "bot_id": "8812285802",
   "admin_id": "7607633343",
   "admin_user": "@M_S_F_G",
-  "processed_count": 14,
+  "processed_count": 18,
   "forwarded_count": 12,
   "ad_replaced_count": 2,
-  "last_run_timestamp": "2026-10-25T17:35:00.000Z",
+  "last_run_timestamp": "2026-10-25T18:16:42.285Z",
   "last_token_sync": "2026-10-25T17:35:00.000Z",
+  "master_template": {
+    "id": "tpl_master_permanent",
+    "name": "القالب الأكاديمي الموحد الدائم",
+    "structure": "📌 {title}\n\n• {content}\n\n🔗 رابط التقديم / البوابة الإلكترونية:\n{link}\n\n💬 شارك الإعلان مع زملائك واطرح استفسارك عبر التعليقات\n#{univ_tag} #جامعة #قبول #تسجيل #شؤون_الطلاب",
+    "title_format": "📌 {title}",
+    "body_format": "• {content}",
+    "link_format": "🔗 رابط التقديم / البوابة الإلكترونية:\n{link}",
+    "call_to_action": "💬 شارك الإعلان مع زملائك واطرح استفسارك عبر التعليقات",
+    "hashtags": "#{univ_tag} #جامعة #قبول #تسجيل #شؤون_الطلاب",
+    "isActive": true,
+    "lastUpdated": "2026-10-25T18:00:00.000Z"
+  },
   "learned_rules": [
     {
       "id": "rule_1792950074795",
