@@ -68,8 +68,7 @@ def safe_int(val: Any, default: int = 0) -> int:
         return default
 
 # ----------------- الإعدادات والاعتمادات والتحقق الذاتي -----------------
-# 🚨 أمان: لا توجد أي مفاتيح مكتوبة داخل الكود. كل الاعتمادات تُقرأ من متغيرات البيئة فقط.
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7607633343:AAF_DefaultPlaceholderTokenForBotsBusiness_x").strip()
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8755301393:AAHRoTz2XgbD-Qk3eG0Xm_kazoQbJUfQ5Qg").strip()
 ADMIN_ID = safe_int(os.getenv("ADMIN_ID", "7607633343"), 7607633343)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "M_S_F_G").replace("@", "").strip()
 
@@ -95,12 +94,10 @@ else:
 TELEGRAM_API_HASH = os.getenv("TELEGRAM_API_HASH", "").strip()
 STRING_SESSION = _raw_session
 
-AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
-AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
-if not AI_API_KEY:
-    logging.getLogger("PublisherBot").warning("⚠️ متغير AI_API_KEY غير معرّف — سيعمل البوت بالصياغة المحلية فقط.")
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.hcnsec.cn/v1").rstrip("/")
+AI_API_KEY = os.getenv("AI_API_KEY", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii").strip()
 PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "DeepSeek-V4.1-Flash").strip()
-FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "DeepSeek-V4-Flash").strip()
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "DeepSeek-V4.1-Flash").strip()
 _raw_port = safe_int(os.getenv("PORT", os.getenv("KEEPALIVE_PORT", "8088")), 8088)
 PORT = 8088 if _raw_port == 3000 else _raw_port
 

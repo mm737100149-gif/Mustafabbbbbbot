@@ -78,17 +78,17 @@ STRING_SESSION = _raw_session
 PHONE_NUMBER = os.getenv("TELEGRAM_PHONE", "")
 
 # إعدادات الـ API الخاص بكم
-AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.openai.com/v1/chat/completions")
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_MODEL = os.getenv("PRIMARY_MODEL", "gpt-4o-mini")
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.hcnsec.cn/v1").rstrip("/") + "/chat/completions"
+AI_API_KEY = os.getenv("AI_API_KEY", "sk-J2ky44F6VTDMkL8Q1GHL5sfmbeIpARVDayNuwMfxKI5zCdii")
+AI_MODEL = os.getenv("PRIMARY_MODEL", "DeepSeek-V4.1-Flash")
 
-TARGET_CHANNEL = os.getenv("TARGET_CHANNEL", "")
+TARGET_CHANNEL = os.getenv("TARGET_CHANNEL", "@jhdhhdcj")
 
 # القنوات المصدر والقنوات المستهدفة المنفصلة (Multi-Source Mapping)
 CHANNEL_MAPPINGS = [
     {
         "target": TARGET_CHANNEL,
-        "sources": ["@KSU_News", "@moe_gov_sa", "@mstfyuhhh"],
+        "sources": ["@KSU_News", "@moe_gov_sa"],
         "name": "قناة النشر الرسمية (أ)"
     }
 ]
