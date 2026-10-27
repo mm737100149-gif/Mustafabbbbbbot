@@ -84,20 +84,27 @@ export function AIChatConsole({
   const [newRuleContent, setNewRuleContent] = useState('');
   const [isSavingRule, setIsSavingRule] = useState(false);
 
+  const isEditingTemplateRef = useRef(false);
+  const lastFetchedStructureRef = useRef('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchTemplate = async () => {
+  const fetchTemplate = async (force = false) => {
     try {
       const res = await fetch('/api/template');
       if (res.ok) {
         const data = await res.json();
         if (data.template) {
           setMasterTemplate(data.template);
-          setTemplateStructure(data.template.structure || '');
+          // Only update textarea if user is not currently editing, or if forced
+          if (force || !isEditingTemplateRef.current || !lastFetchedStructureRef.current) {
+            setTemplateStructure(data.template.structure || '');
+            lastFetchedStructureRef.current = data.template.structure || '';
+          }
         }
       }
     } catch (e) {
@@ -121,17 +128,18 @@ export function AIChatConsole({
 
   useEffect(() => {
     fetchMemory();
-    fetchTemplate();
+    fetchTemplate(true);
     const interval = setInterval(() => {
       fetchMemory();
       fetchTemplate();
-    }, 4000);
+    }, 3500);
     return () => clearInterval(interval);
   }, []);
 
   const handleSaveTemplate = async () => {
     if (!templateStructure.trim()) return;
     setIsSavingTemplate(true);
+    isEditingTemplateRef.current = false;
     try {
       const res = await fetch('/api/template', {
         method: 'POST',
@@ -145,6 +153,7 @@ export function AIChatConsole({
       const data = await res.json();
       if (data.success) {
         setMasterTemplate(data.template);
+        lastFetchedStructureRef.current = data.template.structure || '';
         setStatusMessage('✅ تم اعتماد وحفظ القالب الأكاديمي الدائم بنجاح ومزامنته فوراً مع التيليجرام والويب!');
       }
     } catch (err) {
@@ -156,13 +165,15 @@ export function AIChatConsole({
 
   const handleResetTemplate = async () => {
     setIsResettingTemplate(true);
+    isEditingTemplateRef.current = false;
     try {
       const res = await fetch('/api/template/reset', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setMasterTemplate(data.template);
         setTemplateStructure(data.template.structure);
-        setStatusMessage('✅ تمت استعادة القالب الأكاديمي الافتراضي بنجاح.');
+        lastFetchedStructureRef.current = data.template.structure || '';
+        setStatusMessage('✅ تمت استعادة القالب الأكاديمي الافتراضي بنجاح ومزامنته مع التيليجرام.');
       }
     } catch (err) {
       console.warn('Reset template error', err);

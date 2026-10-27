@@ -1,8 +1,146 @@
 {
-  "_info": "ملف إعداد اختياري للنسخة المستقلة؛ Bots.Business يستخدم Bot Properties.",
+  "_info": "قائمة المراقبة وقنوات ومشاريع الجامعات التلقائية للأخبار الأكاديمية",
   "version": "4.0.0",
-  "target_channels": [],
-  "university_projects": [],
-  "channel_mappings": [],
-  "sources": []
+  "lastUpdated": "2025-05-20T10:00:00.000Z",
+  "target_channels": [
+    {
+      "id": "target_default",
+      "channel": "@jhdhhdcj",
+      "title": "القناة الأكاديمية الرسمية",
+      "enabled": true
+    }
+  ],
+  "sources": [
+    {
+      "id": "src_x_moe",
+      "type": "twitter",
+      "target": "@moe_gov_sa",
+      "title": "حساب وزارة التعليم الرسمي (X / Twitter)",
+      "priority": "high",
+      "rule": "official",
+      "keywords": ["جامعات", "تقويم دراسي", "قبول", "تسجيل", "إجازة", "منح", "مواعيد"],
+      "blacklist": ["إعلان تجاري", "خدمات طلابية مدفوعة"],
+      "enabled": true,
+      "lastPostId": "0",
+      "lastChecked": "2025-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "src_x_ksu",
+      "type": "twitter",
+      "target": "@KSU_News",
+      "title": "حساب أخبار جامعة الملك سعود (X / Twitter)",
+      "priority": "high",
+      "rule": "official",
+      "keywords": ["قبول", "تسجيل", "تحويل", "نتائج", "مواعيد", "حرمان", "جداول"],
+      "blacklist": ["إعلان تجاري"],
+      "enabled": true,
+      "lastPostId": "0",
+      "lastChecked": "2025-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "src_x_uqu",
+      "type": "twitter",
+      "target": "@UQU_EDU",
+      "title": "حساب جامعة أم القرى (X / Twitter)",
+      "priority": "high",
+      "rule": "official",
+      "keywords": ["قبول", "تسجيل", "أكاديمي", "شؤون الطلاب", "نتائج"],
+      "blacklist": [],
+      "enabled": true,
+      "lastPostId": "0",
+      "lastChecked": "2025-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "src_tg_ksu",
+      "type": "telegram",
+      "target": "@KSU_News",
+      "title": "قناة أخبار الجامعة والقبول الرسمي (تيليجرام)",
+      "priority": "high",
+      "rule": "official",
+      "keywords": ["قبول", "تسجيل", "نتائج", "مواعيد", "منح", "امتحان", "pdf"],
+      "blacklist": ["إعلان ممول", "حل واجبات", "بحوث تخرج"],
+      "enabled": true,
+      "lastPostId": "0",
+      "lastChecked": "2025-05-20T10:00:00.000Z"
+    },
+    {
+      "id": "src_tg_uqu",
+      "type": "telegram",
+      "target": "@UQU_EDU",
+      "title": "قناة عمادة القبول والتسجيل - أم القرى (تيليجرام)",
+      "priority": "high",
+      "rule": "official",
+      "keywords": ["قبول", "تسجيل", "تحويل", "جداول"],
+      "blacklist": [],
+      "enabled": true,
+      "lastPostId": "0",
+      "lastChecked": "2025-05-20T10:00:00.000Z"
+    }
+  ],
+  "university_projects": [
+    {
+      "id": "univ_ksu",
+      "name": "جامعة الملك سعود",
+      "code": "KSU",
+      "tag": "جامعة_الملك_سعود",
+      "target_channel": "@jhdhhdcj",
+      "telegram_sources": ["@KSU_News"],
+      "twitter_sources": ["@KSU_News", "@dar_ksu"],
+      "google_news_query": "جامعة الملك سعود القبول والتسجيل",
+      "enabled": true
+    },
+    {
+      "id": "univ_moe",
+      "name": "وزارة التعليم - شؤون الجامعات",
+      "code": "MOE",
+      "tag": "وزارة_التعليم",
+      "target_channel": "@jhdhhdcj",
+      "telegram_sources": ["@moe_gov_sa"],
+      "twitter_sources": ["@moe_gov_sa"],
+      "google_news_query": "وزارة التعليم الجامعات السعودية التقويم الدراسي",
+      "enabled": true
+    },
+    {
+      "id": "univ_uqu",
+      "name": "جامعة أم القرى",
+      "code": "UQU",
+      "tag": "جامعة_أم_القرى",
+      "target_channel": "@jhdhhdcj",
+      "telegram_sources": ["@UQU_EDU"],
+      "twitter_sources": ["@UQU_EDU"],
+      "google_news_query": "جامعة أم القرى القبول والتسجيل",
+      "enabled": true
+    },
+    {
+      "id": "univ_imsiu",
+      "name": "جامعة الإمام محمد بن سعود الإسلامية",
+      "code": "IMSIU",
+      "tag": "جامعة_الإمام",
+      "target_channel": "@jhdhhdcj",
+      "telegram_sources": ["@IMSIU_edu_sa"],
+      "twitter_sources": ["@IMSIU_edu_sa"],
+      "google_news_query": "جامعة الإمام القبول والتسجيل",
+      "enabled": true
+    }
+  ],
+  "channel_mappings": [
+    {
+      "source": "@KSU_News",
+      "target": "@jhdhhdcj",
+      "univ_tag": "جامعة_الملك_سعود",
+      "enabled": true
+    },
+    {
+      "source": "@moe_gov_sa",
+      "target": "@jhdhhdcj",
+      "univ_tag": "وزارة_التعليم",
+      "enabled": true
+    },
+    {
+      "source": "@UQU_EDU",
+      "target": "@jhdhhdcj",
+      "univ_tag": "جامعة_أم_القرى",
+      "enabled": true
+    }
+  ]
 }

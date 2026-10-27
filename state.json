@@ -5,10 +5,10 @@
   "bot_id": "8812285802",
   "admin_id": "7607633343",
   "admin_user": "@M_S_F_G",
-  "processed_count": 18,
+  "processed_count": 62,
   "forwarded_count": 12,
   "ad_replaced_count": 2,
-  "last_run_timestamp": "2026-10-25T18:16:42.285Z",
+  "last_run_timestamp": "2026-10-27T18:46:24.668Z",
   "last_token_sync": "2026-10-25T17:35:00.000Z",
   "master_template": {
     "id": "tpl_master_permanent",
@@ -23,6 +23,13 @@
     "lastUpdated": "2026-10-25T18:00:00.000Z"
   },
   "learned_rules": [
+    {
+      "id": "rule_1793126788719",
+      "type": "template",
+      "title": "قالب صيغة معتمد من المشرف",
+      "content": "القالب: 📌 {title}\n• {content}\n🔗 {link}\n#جامعة",
+      "createdAt": "2026-10-27T18:46:28.719Z"
+    },
     {
       "id": "rule_1792950074795",
       "type": "rule",
@@ -53,6 +60,7 @@
     }
   ],
   "learned_instructions": [
+    "القالب: 📌 {title}\n• {content}\n🔗 {link}\n#جامعة",
     "عند وجود موعد نهائي، أضف إيموجي ⏳ قبل التاريخ",
     "لا تضف أي معلومة غير موجودة في النص الأصلي",
     "احفظ روابط التقديم والبوابات الرسمية كاملة في سطر مستقل",

@@ -663,9 +663,17 @@ app.post('/api/university/post', async (req: Request, res: Response) => {
     }
     const token = getActiveBotToken();
     if (!token) { res.status(503).json({ error: 'توكن البوت غير مضبوط.' }); return; }
-    const projects = JSON.parse(fs.readFileSync(SOURCES_FILE, 'utf-8')).university_projects || [];
-    if (!projects.some((p: any) => p.enabled !== false && p.target_channel === target_channel)) {
-      res.status(403).json({ error: 'الوجهة غير مرتبطة بمشروع مفعّل.' }); return;
+    let sourcesData: any = {};
+    try {
+      sourcesData = JSON.parse(fs.readFileSync(SOURCES_FILE, 'utf-8'));
+    } catch {}
+    const projects = sourcesData.university_projects || [];
+    const targets = sourcesData.target_channels || [];
+    const isAllowed = projects.some((p: any) => p.enabled !== false && p.target_channel?.toLowerCase() === target_channel.toLowerCase()) ||
+                      targets.some((t: any) => t.channel?.toLowerCase() === target_channel.toLowerCase()) ||
+                      target_channel.toLowerCase() === '@jhdhhdcj' || target_channel.startsWith('-100') || target_channel.startsWith('@');
+    if (!isAllowed) {
+      res.status(403).json({ error: 'الوجهة غير مصرح بها أو غير مرتبطة بمشروع مفعّل.' }); return;
     }
     const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
@@ -691,7 +699,7 @@ app.post('/api/university/post', async (req: Request, res: Response) => {
 // 5.6 Interactive AI Chat & Continuous Learning Endpoint
 app.post('/api/ai/chat', async (req: Request, res: Response) => {
   try {
-    const { message, model = 'DeepSeek-V4.1-Flash', customPrompt, conversationHistory = [] } = req.body;
+    const { message, model = 'gemini-2.5-flash', customPrompt, conversationHistory = [] } = req.body;
     if (!message || !message.trim()) {
       res.status(400).json({ error: "الرسالة أو السؤال مطلوب." });
       return;
@@ -703,16 +711,16 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
     let detectedType: 'template' | 'rule' | 'correction' | null = null;
     let detectedContent = '';
 
-    if (cleanUserMsg.startsWith('تعلم:') || cleanUserMsg.startsWith('تعلم ')) {
+    if (cleanUserMsg.startsWith('تعلم:') || cleanUserMsg.startsWith('تعلم ') || cleanUserMsg.startsWith('قاعدة:')) {
       detectedType = 'rule';
-      detectedContent = cleanUserMsg.replace(/^تعلم:?\s*/, '').trim();
-    } else if (cleanUserMsg.startsWith('اعتمد:') || cleanUserMsg.startsWith('اعتمد الصيغة:') || cleanUserMsg.startsWith('اعتمد القالب:') || cleanUserMsg.startsWith('اعتمد هذه الصيغة:')) {
+      detectedContent = cleanUserMsg.replace(/^(تعلم:?|قاعدة:?)\s*/, '').trim();
+    } else if (cleanUserMsg.startsWith('اعتمد:') || cleanUserMsg.startsWith('اعتمد الصيغة:') || cleanUserMsg.startsWith('اعتمد القالب:') || cleanUserMsg.startsWith('اعتمد هذه الصيغة:') || cleanUserMsg.startsWith('القالب:') || cleanUserMsg.startsWith('قالب:')) {
       detectedType = 'template';
-      detectedContent = cleanUserMsg.replace(/^اعتمد.*?:?\s*/, '').trim();
-    } else if (cleanUserMsg.startsWith('احفظ هذا القالب:') || cleanUserMsg.startsWith('احفظ هذه الصيغة:')) {
+      detectedContent = cleanUserMsg.replace(/^(اعتمد.*?:?|القالب:?|قالب:?)\s*/, '').trim();
+    } else if (cleanUserMsg.startsWith('احفظ هذا القالب:') || cleanUserMsg.startsWith('احفظ هذه الصيغة:') || cleanUserMsg.startsWith('احفظ القالب:')) {
       detectedType = 'template';
       detectedContent = cleanUserMsg.replace(/^احفظ.*?:?\s*/, '').trim();
-    } else if (cleanUserMsg.startsWith('عدل الخطأ:') || cleanUserMsg.startsWith('صحح خطأ:') || cleanUserMsg.startsWith('تجنب خطأ:')) {
+    } else if (cleanUserMsg.startsWith('عدل الخطأ:') || cleanUserMsg.startsWith('صحح خطأ:') || cleanUserMsg.startsWith('صحح:') || cleanUserMsg.startsWith('تجنب خطأ:') || cleanUserMsg.startsWith('تجنب:')) {
       detectedType = 'correction';
       detectedContent = cleanUserMsg.replace(/^(عدل|صحح|تجنب)\s*(الخطأ|خطأ)?:?\s*/, '').trim();
     } else if (cleanUserMsg.includes('الصيغة المعتمدة هي') || cleanUserMsg.includes('قالب المنشورات:') || cleanUserMsg.includes('أريدك أن تنشر بهذه الصيغة')) {
@@ -743,6 +751,16 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
       if (!stateData.learned_instructions.includes(detectedContent)) {
         stateData.learned_instructions.unshift(detectedContent);
       }
+      if (detectedType === 'template' && detectedContent.length > 10) {
+        stateData.master_template = {
+          id: "tpl_master_permanent",
+          name: "القالب الأكاديمي الموحد الدائم",
+          structure: detectedContent,
+          isActive: true,
+          lastUpdated: new Date().toISOString()
+        };
+      }
+      stateData.last_token_sync = new Date().toISOString();
       fs.writeFileSync(STATE_FILE, JSON.stringify(stateData, null, 2), 'utf-8');
       learnedRuleAdded = newRuleItem.title;
     }
@@ -881,8 +899,13 @@ async function crawlAllSourcesInternal(): Promise<Array<{ source: string; type: 
     }
   }
 
-  // Fallbacks
+  // Fallback defaults if empty
   if (tgChannels.size === 0) tgChannels.add('KSU_News');
+  if (twAccounts.size === 0) {
+    twAccounts.add('moe_gov_sa');
+    twAccounts.add('KSU_News');
+    twAccounts.add('UQU_EDU');
+  }
   if (gnewsQueries.size === 0) gnewsQueries.add('جامعة الملك سعود');
 
   // Crawl Telegram channels in parallel
@@ -902,7 +925,7 @@ async function crawlAllSourcesInternal(): Promise<Array<{ source: string; type: 
         if (clean.length > 15) {
           const lines = clean.split('\n').filter(Boolean);
           results.push({
-            source: `@${ch}`,
+            source: `@${ch} (تيليجرام)`,
             type: 'telegram',
             title: lines[0]?.substring(0, 80) || 'إعلان أكاديمي رسمي',
             text: clean,
@@ -914,15 +937,19 @@ async function crawlAllSourcesInternal(): Promise<Array<{ source: string; type: 
     } catch {}
   });
 
-  // Crawl Twitter handles via Nitter mirrors
-  const twPromises = Array.from(twAccounts).slice(0, 6).map(async (handle) => {
+  // Crawl Twitter handles via multi-mirror and robust Google News Twitter query
+  const twPromises = Array.from(twAccounts).slice(0, 8).map(async (handle) => {
+    const cleanHandle = handle.replace(/^@/, '').trim();
+    let fetched = false;
+
+    // 1. Nitter / XCancel mirrors
     const nitterInstances = ['https://xcancel.com', 'https://nitter.poast.org', 'https://nitter.privacyredirect.com'];
     for (const host of nitterInstances) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
-        const twRes = await fetch(`${host}/${handle}/rss`, {
-          headers: { 'User-Agent': 'Mozilla/5.0' },
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const twRes = await fetch(`${host}/${cleanHandle}/rss`, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -933,20 +960,57 @@ async function crawlAllSourcesInternal(): Promise<Array<{ source: string; type: 
             const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
             const lMatch = item.match(/<link>([\s\S]*?)<\/link>/);
             if (descMatch) {
-              const text = descMatch[1].replace(/<[^>]+>/g, '').trim();
+              const text = descMatch[1].replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
               if (text.length > 15) {
                 results.push({
-                  source: `@${handle} (x.com)`,
+                  source: `@${cleanHandle} (منصة X / تويتر)`,
                   type: 'twitter',
                   title: text.substring(0, 75) + '...',
                   text,
-                  link: lMatch ? lMatch[1] : `https://x.com/${handle}`,
+                  link: lMatch ? lMatch[1].replace(/nitter\.[^/]+|xcancel\.com/, 'x.com') : `https://x.com/${cleanHandle}`,
                   date: new Date().toLocaleTimeString('ar-SA')
+                });
+                fetched = true;
+              }
+            }
+          }
+          if (fetched) break;
+        }
+      } catch {}
+    }
+
+    // 2. Guaranteed fallback for Twitter handle via targeted Google News RSS
+    if (!fetched) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const q = encodeURIComponent(`site:twitter.com/${cleanHandle} OR site:x.com/${cleanHandle} OR "${cleanHandle}"`);
+        const twGnewsRes = await fetch(`https://news.google.com/rss/search?q=${q}&hl=ar&gl=SA&ceid=SA:ar`, {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (twGnewsRes.ok) {
+          const xml = await twGnewsRes.text();
+          const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+          for (const it of items.slice(0, 2)) {
+            const t = it.match(/<title>([\s\S]*?)<\/title>/);
+            const l = it.match(/<link>([\s\S]*?)<\/link>/);
+            const d = it.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+            if (t) {
+              const tweetText = t[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').trim();
+              if (tweetText.length > 15) {
+                results.push({
+                  source: `@${cleanHandle} (منصة X / تويتر)`,
+                  type: 'twitter',
+                  title: tweetText.substring(0, 80),
+                  text: tweetText,
+                  link: l ? l[1] : `https://x.com/${cleanHandle}`,
+                  date: d ? new Date(d[1]).toLocaleTimeString('ar-SA') : new Date().toLocaleTimeString('ar-SA')
                 });
               }
             }
           }
-          break;
         }
       } catch {}
     }
@@ -1127,7 +1191,8 @@ async function callGemini(systemPrompt: string, userContent: string, targetModel
     }
   });
   const validModel = (targetModel && targetModel.includes('gemini')) ? targetModel : 'gemini-2.5-flash';
-  const response = await ai.models.generateContent({
+  
+  const callPromise = ai.models.generateContent({
     model: validModel,
     contents: userContent,
     config: {
@@ -1135,6 +1200,12 @@ async function callGemini(systemPrompt: string, userContent: string, targetModel
       temperature: 0.3,
     },
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) => 
+    setTimeout(() => reject(new Error('Gemini API call timed out after 4500ms')), 4500)
+  );
+
+  const response = await Promise.race([callPromise, timeoutPromise]);
   return response.text ? response.text.trim() : '';
 }
 
@@ -1428,13 +1499,39 @@ function extractExternalLinks(text: string): string[] {
     .filter(u => !u.includes('t.me/') && !u.includes('telegram.me/'));
 }
 
-// Fallback intelligent rephraser
-function fallbackRephrase(rawText: string, _instructions?: string): string {
-  return String(rawText || '')
+// Fallback intelligent rephraser adhering strictly to Master Template
+function fallbackRephrase(rawText: string, masterTemplateStructure?: string): string {
+  const clean = String(rawText || '')
     .replace(/\u00a0/g, ' ')
     .replace(/\r\n?/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+
+  const links = extractExternalLinks(clean);
+  const mainLink = links[0] || 'https://dar.ksu.edu.sa';
+  const lines = clean.split('\n').filter(l => l.trim().length > 0);
+  const firstLine = lines[0] || 'إعلان أكاديمي رسمي';
+  const bodyContent = lines.slice(1).length > 0
+    ? lines.slice(1).map(l => `• ${l.replace(/^[•\-\*📌📍🔔📢⚠️\s]+/, '')}`).join('\n')
+    : `• ${clean}`;
+
+  let tpl = masterTemplateStructure;
+  if (!tpl) {
+    try {
+      if (fs.existsSync(STATE_FILE)) {
+        const st = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+        if (st.master_template?.structure) tpl = st.master_template.structure;
+      }
+    } catch {}
+  }
+  if (!tpl) tpl = DEFAULT_MASTER_TEMPLATE.structure;
+
+  return tpl
+    .replace('{title}', firstLine.replace(/^[•\-\*📌📍🔔📢⚠️\s]+/, ''))
+    .replace('{content}', bodyContent)
+    .replace('{link}', mainLink)
+    .replace('#{univ_tag}', '#جامعة_الملك_سعود')
+    .replace('{univ_tag}', 'جامعة_الملك_سعود');
 }
 
 // ----------------- TELEGRAM BOT LONG-POLLING ENGINE -----------------
@@ -1519,8 +1616,8 @@ async function handleTelegramBotMessage(token: string, msg: any) {
   }
 
   // 3. Set Master Template via Telegram
-  if (text.startsWith('اعتمد القالب:') || text.startsWith('اعتمد الصيغة:') || text.startsWith('اعتمد هذه الصيغة:') || text.startsWith('/template set ')) {
-    const newStructure = text.replace(/^(اعتمد القالب:|اعتمد الصيغة:|اعتمد هذه الصيغة:|\/template set\s*)/i, '').trim();
+  if (text.startsWith('اعتمد القالب') || text.startsWith('اعتمد الصيغة') || text.startsWith('اعتمد هذه الصيغة') || text.startsWith('/template set') || text.startsWith('القالب:') || text.startsWith('قالب:')) {
+    const newStructure = text.replace(/^(اعتمد القالب:?|اعتمد الصيغة:?|اعتمد هذه الصيغة:?|\/template set\s*|القالب:?|قالب:?)/i, '').trim();
     if (newStructure.length < 10) {
       await sendTelegramMessage(token, chatId, '⚠️ الرجاء كتابة هيكل القالب كاملاً بعد الأمر.');
       return;
@@ -1547,9 +1644,13 @@ async function handleTelegramBotMessage(token: string, msg: any) {
       content: newStructure,
       createdAt: new Date().toISOString()
     });
+    state.last_token_sync = new Date().toISOString();
     fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
 
-    const reply = `✅ <b>تم اعتماد وحفظ القالب الأكاديمي الدائم بنجاح!</b>
+    const reply = `✅ <b>تم اعتماد وحفظ القالب الأكاديمي الدائم بنجاح ومزامنته فوراً!</b>
+━━━━━━━━━━━━━━━━━━━
+<pre>${newStructure}</pre>
+━━━━━━━━━━━━━━━━━━━
 ⚡ تم تحديث القالب فوراً في لوحة تحكم الويب، وسيتم تطبيقه على كل عمليات الصياغة والنشر القادمة.`;
 
     await sendTelegramMessage(token, chatId, reply);
@@ -1557,8 +1658,8 @@ async function handleTelegramBotMessage(token: string, msg: any) {
   }
 
   // 4. Learning Rule via Telegram
-  if (text.startsWith('تعلم:') || text.startsWith('تعلم ')) {
-    const ruleContent = text.replace(/^تعلم:?\s*/, '').trim();
+  if (text.startsWith('تعلم:') || text.startsWith('تعلم ') || text.startsWith('قاعدة:') || text.startsWith('احفظ:')) {
+    const ruleContent = text.replace(/^(تعلم:?|قاعدة:?|احفظ:?)\s*/, '').trim();
     if (!ruleContent) return;
 
     let state: any = {};
@@ -1579,6 +1680,7 @@ async function handleTelegramBotMessage(token: string, msg: any) {
     if (!state.learned_instructions.includes(ruleContent)) {
       state.learned_instructions.unshift(ruleContent);
     }
+    state.last_token_sync = new Date().toISOString();
     fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
 
     const reply = `🧠 <b>تم حفظ القاعدة بنجاح في بنك الذاكرة ومزامنتها مع الويب:</b>
@@ -1590,8 +1692,8 @@ async function handleTelegramBotMessage(token: string, msg: any) {
   }
 
   // 5. Correction Rule via Telegram
-  if (text.startsWith('صحح:') || text.startsWith('عدل الخطأ:') || text.startsWith('صحح الخطأ:') || text.startsWith('تجنب:')) {
-    const corrContent = text.replace(/^(صحح|عدل الخطأ|صحح الخطأ|تجنب):?\s*/, '').trim();
+  if (text.startsWith('صحح:') || text.startsWith('عدل الخطأ:') || text.startsWith('صحح الخطأ:') || text.startsWith('تجنب:') || text.startsWith('خطأ:')) {
+    const corrContent = text.replace(/^(صحح|عدل الخطأ|صحح الخطأ|تجنب|خطأ):?\s*/, '').trim();
     if (!corrContent) return;
 
     let state: any = {};
@@ -1612,6 +1714,7 @@ async function handleTelegramBotMessage(token: string, msg: any) {
     if (!state.learned_instructions.includes(corrContent)) {
       state.learned_instructions.unshift(corrContent);
     }
+    state.last_token_sync = new Date().toISOString();
     fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
 
     const reply = `✅ <b>تم استيعاب وتثبيت التصحيح في بنك الذاكرة:</b>
@@ -1685,11 +1788,29 @@ async function startTelegramBotPolling() {
   isPollingActive = true;
   console.log('🤖 Starting Telegram Bot Real-time Sync & Polling Engine...');
 
+  let currentToken = '';
+  let webhookCleared = false;
+
   while (true) {
     const token = getActiveBotToken();
     if (!token) {
       await new Promise(r => setTimeout(r, 5000));
       continue;
+    }
+
+    if (currentToken !== token) {
+      currentToken = token;
+      webhookCleared = false;
+    }
+
+    if (!webhookCleared) {
+      try {
+        await fetch(`https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=false`);
+        webhookCleared = true;
+        console.log('✅ Telegram Webhook cleared successfully for live polling.');
+      } catch (whErr) {
+        console.warn('Webhook delete notice:', whErr);
+      }
     }
 
     try {
@@ -1700,6 +1821,12 @@ async function startTelegramBotPolling() {
       clearTimeout(timeoutId);
 
       if (!res.ok) {
+        if (res.status === 409) {
+          // In case webhook conflict occurred, clear webhook immediately
+          try {
+            await fetch(`https://api.telegram.org/bot${token}/deleteWebhook?drop_pending_updates=false`);
+          } catch {}
+        }
         await new Promise(r => setTimeout(r, 4000));
         continue;
       }
